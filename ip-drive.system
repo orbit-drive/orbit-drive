@@ -1,0 +1,15 @@
+[Unit]
+Description=Ipfs Drive
+ConditionPathExists=/home/{USER}/go/bin/ip-drive
+After=network.target
+
+[Service]
+Type=simple
+User={USER}
+Group={USER}
+
+WorkingDirectory=/home/{USER}/go/src/github.com/{USER}/ip-drive
+ExecStart=/home/{USER}/go/bin/ip-drive
+
+[Install]
+WantedBy=multi-user.target

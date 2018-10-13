@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/wlwanpan/ipfs-drive/fs"
+	"github.com/wlwanpan/ip-drive/fs"
 )
 
 const (
@@ -38,21 +38,10 @@ func main() {
 	// 	log.Println(f.Name())
 	// }
 
-	ipfsync := fs.NewIpfsSync(*rootPath, *nodeAddr)
+	fs.InitShell(*nodeAddr)
+	fs.InitConfig()
+	defer fs.ConfigDb.Close()
 
-	iter := ipfsync.Db.NewIterator(nil, nil)
-	for iter.Next() {
-		// Remember that the contents of the returned slice should not be modified, and
-		// only valid until the next call to Next.
-		key := iter.Key()
-		value := iter.Value()
-		log.Printf("k: %s, v: %s", key, value)
-	}
-	iter.Release()
-	err := iter.Error()
-	if err != nil {
-		log.Fatal(err)
-	}
-
+	ipfsync := fs.NewSync(*rootPath, *nodeAddr)
 	ipfsync.Start()
 }

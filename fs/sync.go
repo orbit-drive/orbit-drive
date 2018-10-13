@@ -2,39 +2,28 @@ package fs
 
 import (
 	"log"
-	"os"
 
 	"github.com/fsnotify/fsnotify"
-	shell "github.com/ipfs/go-ipfs-api"
-	"github.com/syndtr/goleveldb/leveldb"
 )
 
-type IpfsSync struct {
-	Done  chan bool
-	Path  string
-	Shell *shell.Shell
-	Db    *leveldb.DB
+type Sync struct {
+	Done chan bool
+	Path string
 }
 
-func NewIpfsSync(p string, addr string) *IpfsSync {
-	db, err := leveldb.OpenFile(p, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &IpfsSync{
-		Done:  make(chan bool),
-		Path:  p,
-		Shell: shell.NewShell(addr),
-		Db:    db,
+func NewSync(p string, addr string) *Sync {
+	return &Sync{
+		Done: make(chan bool),
+		Path: p,
 	}
 }
 
-func (is *IpfsSync) Stop() {
-	is.Done <- true
+func (s *Sync) Stop() {
+	s.Done <- true
 }
 
-func (is *IpfsSync) Start() {
-	ops, errs := startWatcher(is.Path)
+func (s *Sync) Start() {
+	ops, errs := startWatcher(s.Path)
 	defer close(ops)
 	defer close(errs)
 
@@ -49,7 +38,7 @@ func (is *IpfsSync) Start() {
 			case fsnotify.Chmod:
 				log.Println("Write", op.String())
 			case fsnotify.Create:
-				go is.Upload(op.Name)
+				go Upload(op.Name)
 			case fsnotify.Rename:
 				log.Println("Rename", op.Name)
 			case fsnotify.Remove:
@@ -61,43 +50,11 @@ func (is *IpfsSync) Start() {
 			}
 		case err := <-errs:
 			log.Println(err)
-		case <-is.Done:
+		case <-s.Done:
 			log.Println("Ipfsync stopped.")
 			return
 		}
 	}
-}
-
-func (is *IpfsSync) Upload(p string) error {
-	fi, err := os.Stat(p)
-	if err != nil {
-		return err
-	}
-
-	if fi.IsDir() {
-		log.Println("Uploading dir: ", p)
-		cid, err := is.Shell.AddDir(p)
-		if err != nil {
-			return err
-		}
-		log.Println("Uploaded dir: ", cid)
-		return nil
-	}
-
-	f, _ := os.Open(p)
-	log.Println("Uploading file: ", p)
-	cid, err := is.Shell.Add(f)
-	if err != nil {
-		return err
-	}
-
-	err = is.Db.Put([]byte(p), []byte(cid), nil)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Println("Uploaded file: ", cid)
-
-	return nil
 }
 
 func startWatcher(p string) (chan fsnotify.Event, chan error) {
