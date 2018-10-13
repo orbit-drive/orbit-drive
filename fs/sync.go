@@ -33,7 +33,6 @@ func (s *Sync) Start() {
 			if op.Op.String() == "" {
 				continue
 			}
-
 			switch op.Op {
 			case fsnotify.Chmod:
 				log.Println("Write", op.String())

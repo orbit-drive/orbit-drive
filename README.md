@@ -1,4 +1,4 @@
-# IP Drop
+# IP Drive
 
 Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + [Infura](https://infura.io)
 

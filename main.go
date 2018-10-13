@@ -1,47 +1,56 @@
 package main
 
 import (
-	"flag"
-	"log"
+	"fmt"
 	"os"
 
+	"github.com/akamensky/argparse"
 	"github.com/wlwanpan/ip-drive/fs"
 )
 
 const (
-	infuraAddr = "https://ipfs.infura.io:5001"
+	InfuraAddr = "https://ipfs.infura.io:5001"
 )
 
 func main() {
+	p := argparse.NewParser("ip-drive", "File uploader and synchronizer built on IPFS and Infura.")
 
-	nodeAddr := flag.String("ipfs-addr", infuraAddr, "Ipfs node address.")
-	rootPath := flag.String("root", "", "Root path of folder to synchronize.")
+	// init command
+	initCmd := p.NewCommand("init", "Initialize folder to sync.")
+	root := initCmd.String("r", "root", &argparse.Options{
+		Required: false,
+		Help:     "Root path of folder to synchronise.",
+	})
+	password := initCmd.String("p", "password", &argparse.Options{
+		Required: false,
+		Help:     "Set password for file encryption.",
+	})
 
-	flag.Parse()
+	// sync command
+	syncCmd := p.NewCommand("sync", "Start syncing folder to the ipfs network.")
+	nodeAddr := syncCmd.String("n", "node", &argparse.Options{
+		Required: false,
+		Default:  InfuraAddr,
+		Help:     "Ipfs node address, will default to an infura node if none is provided.",
+	})
 
-	if *rootPath == "" {
-		pwd, err := os.Getwd()
-		if err != nil {
-			log.Fatal(err)
-		}
-		*rootPath = pwd
+	err := p.Parse(os.Args)
+	if err != nil {
+		fmt.Println(p.Usage(err))
+		os.Exit(1)
 	}
 
-	log.Println("Syncing: ", *rootPath)
-
-	// Create a dir tree mapper to diff sync
-	// files, err := ioutil.ReadDir(*rootPath)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// for _, f := range files {
-	// 	log.Println(f.Name())
-	// }
-
-	fs.InitShell(*nodeAddr)
 	fs.InitConfig()
 	defer fs.ConfigDb.Close()
 
-	ipfsync := fs.NewSync(*rootPath, *nodeAddr)
-	ipfsync.Start()
+	switch true {
+	case initCmd.Happened():
+		fs.NewUsr(*root, *password)
+	case syncCmd.Happened():
+		fs.InitShell(*nodeAddr)
+		ipfsync := fs.NewSync(*root, *nodeAddr)
+		ipfsync.Start()
+	default:
+		os.Exit(1)
+	}
 }
