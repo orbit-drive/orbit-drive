@@ -40,12 +40,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	fs.InitConfig()
-	defer fs.ConfigDb.Close()
+	fs.InitDb()
+	defer fs.Db.Close()
 
 	switch true {
 	case initCmd.Happened():
-		fs.NewUsr(*root, *password)
+		err := fs.NewConfig(*root, *password)
+		if err != nil {
+			fmt.Println(p.Usage(err))
+		}
+		fmt.Println("Configured! Run the following command to start syncing: ip-drive sync")
 	case syncCmd.Happened():
 		fs.InitShell(*nodeAddr)
 		ipfsync := fs.NewSync(*root, *nodeAddr)

@@ -1,55 +1,39 @@
 package fs
 
 import (
-	"log"
-	"os"
-	"os/user"
+	"encoding/json"
 
-	"github.com/syndtr/goleveldb/leveldb"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var (
-	ConfigDb *leveldb.DB
+const (
+	configKey string = "config"
 )
 
-func GetCurrentUsr() *user.User {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return usr
+type Config struct {
+	Root     string `json:"root_path"`
+	Password string `json:"password_hash"`
 }
 
-func GenConfigPath() string {
-	usr := GetCurrentUsr()
-	cp := usr.HomeDir + "/.ip-drive"
-
-	_, err := os.Stat(cp)
-	if os.IsNotExist(err) {
-		os.Mkdir(cp, os.ModePerm)
-	}
-
-	return cp
-}
-
-func InitConfig() error {
-	cp := GenConfigPath()
-	log.Println(cp)
-	var err error
-	ConfigDb, err = leveldb.OpenFile(cp, nil)
+func (c *Config) Save() error {
+	p, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
-
-	return nil
+	return Db.Put([]byte(configKey), p, nil)
 }
 
-func NewUsr(root string, p string) error {
-	usr := GetCurrentUsr()
+func (c *Config) Load() error {
+	p, err := Db.Get([]byte(configKey), nil)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(p, c)
+}
+
+func NewConfig(root string, p string) error {
 	if root == "" {
-		root = usr.HomeDir
+		root = GetHomeDir()
 	}
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(p), bcrypt.DefaultCost)
@@ -57,18 +41,9 @@ func NewUsr(root string, p string) error {
 		return err
 	}
 
-	m := make(map[string]string)
-	m["password"] = string(hash)
-	m["root"] = root
-
-	return BatchPut(m)
-}
-
-func BatchPut(m map[string]string) error {
-	b := new(leveldb.Batch)
-	for k, v := range m {
-		b.Put([]byte(k), []byte(v))
+	c := &Config{
+		Root:     root,
+		Password: string(hash[:]),
 	}
-
-	return ConfigDb.Write(b, nil)
+	return c.Save()
 }
