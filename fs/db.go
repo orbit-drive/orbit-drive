@@ -12,7 +12,7 @@ var (
 )
 
 func InitDb() {
-	cp := GetHomeDir() + "/.ip-drive"
+	cp := GetHomeDir() + "/.orbit-drive/datastore"
 
 	_, err := os.Stat(cp)
 	if os.IsNotExist(err) {

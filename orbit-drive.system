@@ -1,0 +1,15 @@
+[Unit]
+Description=Orbit Drive
+ConditionPathExists=/home/{USER}/go/bin/orbit-drive
+After=network.target
+
+[Service]
+Type=simple
+User={USER}
+Group={USER}
+
+WorkingDirectory=/home/{USER}/go/src/github.com/{USER}/orbit-drive
+ExecStart=/home/{USER}/go/bin/orbit-drive
+
+[Install]
+WantedBy=multi-user.target

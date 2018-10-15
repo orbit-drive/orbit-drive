@@ -1,4 +1,4 @@
-# IP Drive
+# Orbit Drive
 
 Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + [Infura](https://infura.io)
 
@@ -7,20 +7,20 @@ Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + 
 - CLI
 
 ```bash
-go run main.go -root=/home/{user}/ipfs-folder
+go run main.go -root=/{folder_to_sync}
 ```
 
 - Register Service
 
 ```bash
-# Move ip-drive service file to system
-sudo mv ./ip-drive.service /lib/systemd/system/.
+# Move orbit-drive service file to system
+sudo mv ./orbit-drive.service /lib/systemd/system/.
 
 # Set permission
-sudo chmod 755 /lib/systemd/system/ip-drive.service
+sudo chmod 755 /lib/systemd/system/orbit-drive.service
 
 # Load and start service
 sudo systemctl daemon-reload
-sudo systemctl enable ip-drive.service
-sudo systemctl start ip-drive
+sudo systemctl enable orbit-drive.service
+sudo systemctl start orbit-drive
 ```

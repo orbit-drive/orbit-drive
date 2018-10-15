@@ -12,6 +12,7 @@ const (
 
 type Config struct {
 	Root     string `json:"root_path"`
+	Node     string `json:"node_addr"`
 	Password string `json:"password_hash"`
 }
 
@@ -23,15 +24,20 @@ func (c *Config) Save() error {
 	return Db.Put([]byte(configKey), p, nil)
 }
 
-func (c *Config) Load() error {
-	p, err := Db.Get([]byte(configKey), nil)
+func LoadConfig() (*Config, error) {
+	data, err := Db.Get([]byte(configKey), nil)
 	if err != nil {
-		return err
+		return &Config{}, err
 	}
-	return json.Unmarshal(p, c)
+	c := &Config{}
+	err = json.Unmarshal(data, c)
+	if err != nil {
+		return &Config{}, err
+	}
+	return c, nil
 }
 
-func NewConfig(root string, p string) error {
+func NewConfig(root, node, p string) error {
 	if root == "" {
 		root = GetHomeDir()
 	}
@@ -43,6 +49,7 @@ func NewConfig(root string, p string) error {
 
 	c := &Config{
 		Root:     root,
+		Node:     node,
 		Password: string(hash[:]),
 	}
 	return c.Save()
