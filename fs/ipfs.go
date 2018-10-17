@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"errors"
 	"log"
 	"os"
 
@@ -23,7 +22,7 @@ func UploadFile(p string) (string, error) {
 	}
 	if fi.IsDir() {
 		log.Println("Path provided is not a file: ", p)
-		return "", errors.New("Not a file.")
+		return "", ErrInValidPath
 	}
 
 	f, _ := os.Open(p)

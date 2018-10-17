@@ -7,8 +7,10 @@ import (
 )
 
 var (
-	// DB Errors
+	// ErrNotFound is returned when the record being fetch does not exist.
 	ErrNotFound = leveldb.ErrNotFound
 
-	ErrInvalidKey = errors.New("Db: key invalid.")
+	// ErrInValidPath is returned when the given path does not exist in the system
+	// or when uploading an empty file to ipfs.
+	ErrInValidPath = errors.New("File: path is invalid.")
 )
