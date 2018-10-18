@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	configKey string = "config"
+	CONFIG_KEY string = "CONFIG"
 )
 
 type Config struct {
@@ -21,11 +21,11 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	return Db.Put([]byte(configKey), p, nil)
+	return Db.Put([]byte(CONFIG_KEY), p, nil)
 }
 
 func LoadConfig() (*Config, error) {
-	data, err := Db.Get([]byte(configKey), nil)
+	data, err := Db.Get([]byte(CONFIG_KEY), nil)
 	if err != nil {
 		return &Config{}, err
 	}

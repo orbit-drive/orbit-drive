@@ -2,7 +2,6 @@ package fs
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"sync"
@@ -41,6 +40,7 @@ type VNode struct {
 }
 
 func (vn *VNode) Save() error {
+	// If ipfs hash not present, then upload to network
 	if vn.Source == "" {
 		s, err := UploadFile(vn.Path)
 		if err != nil {
@@ -49,12 +49,15 @@ func (vn *VNode) Save() error {
 		}
 		vn.Source = s
 	}
-	data, err := json.Marshal(vn)
-	if err != nil {
-		fmt.Println(err)
-		return err
+	_id := string(vn.Id[:])
+	savedHash := SavedFiles[_id]
+	if savedHash != "" {
+		// run ipfs hash compare here
+		// if same just delete from SavedFiles
+		// else upload first then delete
+		delete(SavedFiles, _id)
 	}
-	return Db.Put([]byte(vn.Id), data, nil)
+	return Db.Put([]byte(vn.Id), []byte(vn.Source), nil)
 }
 
 func (vn *VNode) PopulateNodes(path string) error {

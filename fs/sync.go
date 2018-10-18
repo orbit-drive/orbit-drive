@@ -13,8 +13,15 @@ func Sync(c *Config) {
 	// Init ipfs api shell
 	InitShell(c.Node)
 
+	// Init saved files
+	InitSavedFiles()
+
 	// Load Tree from Db and Gen diffing Tree
-	InitVTree(c.Root)
+	err := InitVTree(c.Root)
+	if err != nil {
+		// Delete prev files saved but no longer present in file system.
+		RunGarbageCollect()
+	}
 
 	// Logs the json representation of the loaded VTree
 	data, err := json.Marshal(&VTree)
