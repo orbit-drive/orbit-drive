@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/akamensky/argparse"
 	"github.com/wlwanpan/orbit-drive/fs"
@@ -36,9 +38,22 @@ func main() {
 		os.Exit(0)
 	}
 
+	// init leveldb
 	fs.InitDb()
 	defer fs.Db.Close()
 
+	// System close handling
+	close := make(chan os.Signal, 2)
+	signal.Notify(close, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-close
+		fmt.Println("Stopping synchronization...")
+		fs.Db.Close()
+		// Need to also close watcher
+		os.Exit(0)
+	}()
+
+	// Call usr command
 	switch true {
 	case initCmd.Happened():
 		err := fs.NewConfig(*root, *nodeAddr, *password)

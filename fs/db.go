@@ -30,11 +30,11 @@ func InitSavedFiles() error {
 	SavedFiles = map[string]string{}
 	iter := Db.NewIterator(nil, nil)
 	for iter.Next() {
-		k := string(iter.Key()[:])
+		k := ToStr(iter.Key())
 		switch k {
 		case ROOT_KEY, CONFIG_KEY:
 		default:
-			v := string(iter.Value()[:])
+			v := ToStr(iter.Value())
 			SavedFiles[k] = v
 		}
 	}
@@ -49,7 +49,7 @@ func InitSavedFiles() error {
 func RunGarbageCollect() error {
 	b := new(leveldb.Batch)
 	for k, _ := range SavedFiles {
-		b.Delete([]byte(k))
+		b.Delete(ToByte(k))
 	}
 	err := Db.Write(b, nil)
 	if err != nil {
@@ -62,7 +62,7 @@ func RunGarbageCollect() error {
 func BatchPut(m map[string]string) error {
 	b := new(leveldb.Batch)
 	for k, v := range m {
-		b.Put([]byte(k), []byte(v))
+		b.Put(ToByte(k), ToByte(v))
 	}
 	return Db.Write(b, nil)
 }

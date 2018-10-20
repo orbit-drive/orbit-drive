@@ -28,10 +28,9 @@ func Sync(c *Config) {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(string(data[:]))
+	log.Println(ToStr(data))
 
-	// Diff t and Tree
 	// Init and Start file watcher
-	// w := NewWatcher(c.Root)
-	// w.Start()
+	w := NewWatcher(c.Root)
+	w.Start()
 }

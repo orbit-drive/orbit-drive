@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"crypto/sha256"
 	"log"
 	"os"
 	"os/user"
@@ -16,9 +17,22 @@ func GetHomeDir() string {
 }
 
 func GetCurrentDir() string {
-	path, err := os.Executable()
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
 		log.Fatal(err)
 	}
-	return filepath.Dir(path)
+	return dir
+}
+
+func HashStr(p string) []byte {
+	hash := sha256.Sum256(ToByte(p))
+	return hash[:]
+}
+
+func ToByte(s string) []byte {
+	return []byte(s)
+}
+
+func ToStr(b []byte) string {
+	return string(b[:])
 }

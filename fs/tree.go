@@ -1,15 +1,16 @@
 package fs
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io/ioutil"
 	"sync"
 )
 
 const (
+	// leveldb key to store the root tree
 	ROOT_KEY string = "ROOT_TREE"
 
+	// File type constants
 	FileCode = iota
 	DirCode  = iota
 )
@@ -39,66 +40,20 @@ type VNode struct {
 	Source string `json:source`
 }
 
-func (vn *VNode) Save() error {
-	// If ipfs hash not present, then upload to network
-	if vn.Source == "" {
-		s, err := UploadFile(vn.Path)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		vn.Source = s
+// NewVNode initialize and returns a new VNode.
+func NewVNode(p string) *VNode {
+	return &VNode{
+		Id:     HashStr(p),
+		Path:   p,
+		Links:  []*VNode{},
+		Source: "",
 	}
-	_id := string(vn.Id[:])
-	savedHash := SavedFiles[_id]
-	if savedHash != "" {
-		// run ipfs hash compare here
-		// if same just delete from SavedFiles
-		// else upload first then delete
-		delete(SavedFiles, _id)
-	}
-	return Db.Put([]byte(vn.Id), []byte(vn.Source), nil)
 }
 
-func (vn *VNode) PopulateNodes(path string) error {
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		return err
-	}
-
-	var wg sync.WaitGroup
-	for _, f := range files {
-		abspath := vn.Path + "/" + f.Name()
-		n := &VNode{
-			Id:     GenIdFromPath(abspath),
-			Path:   abspath,
-			Links:  []*VNode{},
-			Source: "",
-		}
-
-		vn.Links = append(vn.Links, n)
-
-		if f.IsDir() {
-			n.PopulateNodes(abspath)
-		} else {
-			wg.Add(1)
-			go func() {
-				err := n.Save()
-				if err != nil {
-					fmt.Println(err)
-				}
-				wg.Done()
-			}()
-		}
-	}
-
-	wg.Wait()
-	return nil
-}
-
+// InitVTree initialize a new virtual tree (VTree) given an absolute path.
 func InitVTree(path string) error {
 	VTree = &VNode{
-		Id:    []byte(ROOT_KEY),
+		Id:    ToByte(ROOT_KEY),
 		Path:  path,
 		Type:  DirCode,
 		Links: []*VNode{},
@@ -111,7 +66,68 @@ func InitVTree(path string) error {
 	return nil
 }
 
-func GenIdFromPath(p string) []byte {
-	hash := sha256.Sum256([]byte(p))
-	return hash[:]
+// PopulateNodes read a path and populate the its links given
+// the path is a directory else creates a file node.
+func (vn *VNode) PopulateNodes(path string) error {
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		return err
+	}
+
+	var wg sync.WaitGroup
+	for _, f := range files {
+		abspath := vn.Path + "/" + f.Name()
+		n := NewVNode(abspath)
+
+		vn.Links = append(vn.Links, n)
+
+		if f.IsDir() {
+			n.PopulateNodes(abspath)
+		} else {
+			wg.Add(1)
+			go func() {
+				err := n.Save()
+				if err != nil {
+					// To write to a log file.
+					fmt.Println(err)
+				}
+				wg.Done()
+			}()
+		}
+	}
+
+	wg.Wait()
+	return nil
+}
+
+// Save
+func (vn *VNode) Save() error {
+	// If ipfs hash not present, then upload to network
+	if vn.Source == "" {
+		s, err := UploadFile(vn.Path)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		vn.Source = s
+	}
+	_id := ToStr(vn.Id)
+	savedHash := SavedFiles[_id]
+	if savedHash != "" {
+		// run ipfs hash compare here
+		// if same just delete from SavedFiles
+		// else upload first then delete
+		delete(SavedFiles, _id)
+	}
+	return Db.Put(vn.Id, ToByte(vn.Source), nil)
+}
+
+// AddNode traverse a VTree to the given path and calls PopulateNodes.
+func (vn *VNode) AddNode(path string) error {
+	return nil
+}
+
+// RemoveNode traverse a VTree and remove the VNode at the given path.
+func (vn *VNode) RemoveNode(path string) error {
+	return nil
 }

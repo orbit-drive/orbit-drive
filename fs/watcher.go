@@ -6,8 +6,12 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+// Watcher represents a path to watch for usr changes.
 type Watcher struct {
+	// Done channel used to indicate when to stop the watcher
 	Done chan bool
+
+	// Path is absolute path to watch.
 	Path string
 }
 
@@ -23,7 +27,7 @@ func (s *Watcher) Stop() {
 }
 
 func (s *Watcher) Start() {
-	ops, errs := startWatcher(s.Path)
+	ops, errs := startNotifier(s.Path)
 	defer close(ops)
 	defer close(errs)
 
@@ -40,6 +44,7 @@ func (s *Watcher) Start() {
 			case fsnotify.Create:
 				// File created
 				log.Println("Create", op.String())
+				// VTree.AddNode()
 			case fsnotify.Rename:
 				// File renamed -> also called after create, write
 				log.Println("Rename", op.String())
@@ -61,7 +66,8 @@ func (s *Watcher) Start() {
 	}
 }
 
-func startWatcher(p string) (chan fsnotify.Event, chan error) {
+// startNotifier is a wrapper around fsnotify package.
+func startNotifier(p string) (chan fsnotify.Event, chan error) {
 	w, err := fsnotify.NewWatcher()
 	if err != nil {
 		log.Fatalln(err)
