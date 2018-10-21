@@ -51,7 +51,7 @@ func NewVNode(p string) *VNode {
 }
 
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
-func InitVTree(path string) error {
+func InitVTree(path string, s FileStore) error {
 	VTree = &VNode{
 		Id:    ToByte(ROOT_KEY),
 		Path:  path,
@@ -59,7 +59,7 @@ func InitVTree(path string) error {
 		Links: []*VNode{},
 	}
 
-	err := VTree.PopulateNodes(path)
+	err := VTree.PopulateNodes(path, s)
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func InitVTree(path string) error {
 
 // PopulateNodes read a path and populate the its links given
 // the path is a directory else creates a file node.
-func (vn *VNode) PopulateNodes(path string) error {
+func (vn *VNode) PopulateNodes(path string, s FileStore) error {
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
 		return err
@@ -78,11 +78,12 @@ func (vn *VNode) PopulateNodes(path string) error {
 	for _, f := range files {
 		abspath := vn.Path + "/" + f.Name()
 		n := NewVNode(abspath)
+		n.Source = s[ToStr(n.Id)]
 
 		vn.Links = append(vn.Links, n)
 
 		if f.IsDir() {
-			n.PopulateNodes(abspath)
+			n.PopulateNodes(abspath, s)
 		} else {
 			wg.Add(1)
 			go func() {
@@ -110,14 +111,6 @@ func (vn *VNode) Save() error {
 			return err
 		}
 		vn.Source = s
-	}
-	_id := ToStr(vn.Id)
-	savedHash := SavedFiles[_id]
-	if savedHash != "" {
-		// run ipfs hash compare here
-		// if same just delete from SavedFiles
-		// else upload first then delete
-		delete(SavedFiles, _id)
 	}
 	return Db.Put(vn.Id, ToByte(vn.Source), nil)
 }

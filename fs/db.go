@@ -7,9 +7,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
+type FileStore map[string]string
+
 var (
-	Db         *leveldb.DB
-	SavedFiles map[string]string
+	Db *leveldb.DB
 )
 
 func InitDb() {
@@ -26,8 +27,8 @@ func InitDb() {
 	}
 }
 
-func InitSavedFiles() error {
-	SavedFiles = map[string]string{}
+func GetFileStore() (FileStore, error) {
+	store := make(FileStore)
 	iter := Db.NewIterator(nil, nil)
 	for iter.Next() {
 		k := ToStr(iter.Key())
@@ -35,33 +36,32 @@ func InitSavedFiles() error {
 		case ROOT_KEY, CONFIG_KEY:
 		default:
 			v := ToStr(iter.Value())
-			SavedFiles[k] = v
+			store[k] = v
 		}
 	}
 	iter.Release()
 	err := iter.Error()
 	if err != nil {
-		return err
+		return FileStore{}, err
 	}
-	return nil
+	return store, nil
 }
 
-func RunGarbageCollect() error {
+func RunGarbageCollection(s FileStore) error {
 	b := new(leveldb.Batch)
-	for k, _ := range SavedFiles {
+	for k, _ := range s {
 		b.Delete(ToByte(k))
 	}
 	err := Db.Write(b, nil)
 	if err != nil {
 		return err
 	}
-	SavedFiles = map[string]string{}
 	return nil
 }
 
-func BatchPut(m map[string]string) error {
+func BatchPut(s FileStore) error {
 	b := new(leveldb.Batch)
-	for k, v := range m {
+	for k, v := range s {
 		b.Put(ToByte(k), ToByte(v))
 	}
 	return Db.Write(b, nil)
