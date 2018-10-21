@@ -27,7 +27,7 @@ func Sync(c *Config) {
 	}
 
 	// Logs the json representation of the loaded VTree
-	data, err := json.Marshal(&VTree)
+	data, err := json.MarshalIndent(&VTree, "", "	")
 	if err != nil {
 		log.Println(err)
 	}

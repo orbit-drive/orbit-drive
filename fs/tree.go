@@ -3,6 +3,8 @@ package fs
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"sync"
 )
 
@@ -40,36 +42,80 @@ type VNode struct {
 	Source string `json:source`
 }
 
-// NewVNode initialize and returns a new VNode.
-func NewVNode(p string) *VNode {
-	return &VNode{
-		Id:     HashStr(p),
-		Path:   p,
-		Links:  []*VNode{},
-		Source: "",
+func (vn *VNode) SetAsDir() {
+	vn.Type = DirCode
+}
+
+func (vn *VNode) SetAsFile() {
+	vn.Type = FileCode
+}
+
+// SetSource set the vnode source to the cached source if present.
+func (vn *VNode) SetSource(s FileStore) {
+	i := ToStr(vn.Id)
+	if src, ok := s[i]; ok {
+		vn.Source = src
+		delete(s, i)
 	}
 }
 
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
 func InitVTree(path string, s FileStore) error {
 	VTree = &VNode{
-		Id:    ToByte(ROOT_KEY),
-		Path:  path,
-		Type:  DirCode,
-		Links: []*VNode{},
+		Id:     ToByte(ROOT_KEY),
+		Path:   path, // To optimize here -> start with "/" not abs path
+		Type:   DirCode,
+		Links:  []*VNode{},
+		Source: "",
 	}
 
-	err := VTree.PopulateNodes(path, s)
+	err := VTree.PopulateNodes(s)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// NewFile traverse VTree to locate path parent dir and
+// add a new vnode.
+func NewFile(path string) error {
+	dir := filepath.Dir(path)
+	vn, err := VTree.FindNodeAt(dir)
+	if err != nil {
+		return err
+	}
+	n := vn.NewVNode(path)
+	fi, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if fi.IsDir() {
+		n.SetAsDir()
+		n.PopulateNodes(FileStore{})
+	} else {
+		n.SetAsFile()
+		n.Save()
+	}
+	return nil
+}
+
+// NewVNode initialize and returns a new VNode under current vnode.
+func (vn *VNode) NewVNode(path string) *VNode {
+	i := append(vn.Id, path...)
+	n := &VNode{
+		Id:     HashStr(ToStr(i)),
+		Path:   path,
+		Links:  []*VNode{},
+		Source: "",
+	}
+	vn.Links = append(vn.Links, n)
+	return n
+}
+
 // PopulateNodes read a path and populate the its links given
 // the path is a directory else creates a file node.
-func (vn *VNode) PopulateNodes(path string, s FileStore) error {
-	files, err := ioutil.ReadDir(path)
+func (vn *VNode) PopulateNodes(s FileStore) error {
+	files, err := ioutil.ReadDir(vn.Path)
 	if err != nil {
 		return err
 	}
@@ -77,14 +123,14 @@ func (vn *VNode) PopulateNodes(path string, s FileStore) error {
 	var wg sync.WaitGroup
 	for _, f := range files {
 		abspath := vn.Path + "/" + f.Name()
-		n := NewVNode(abspath)
-		n.Source = s[ToStr(n.Id)]
-
-		vn.Links = append(vn.Links, n)
+		n := vn.NewVNode(abspath)
+		n.SetSource(s)
 
 		if f.IsDir() {
-			n.PopulateNodes(abspath, s)
+			n.SetAsDir()
+			n.PopulateNodes(s)
 		} else {
+			n.SetAsFile()
 			wg.Add(1)
 			go func() {
 				err := n.Save()
@@ -116,8 +162,10 @@ func (vn *VNode) Save() error {
 }
 
 // AddNode traverse a VTree to the given path and calls PopulateNodes.
-func (vn *VNode) AddNode(path string) error {
-	return nil
+func (vn *VNode) FindNodeAt(path string) (*VNode, error) {
+	// Implement find node here, currently just returns the root
+
+	return vn, nil
 }
 
 // RemoveNode traverse a VTree and remove the VNode at the given path.

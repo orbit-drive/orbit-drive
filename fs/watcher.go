@@ -44,7 +44,7 @@ func (s *Watcher) Start() {
 			case fsnotify.Create:
 				// File created
 				log.Println("Create", op.String())
-				// VTree.AddNode()
+				NewFile(op.Name)
 			case fsnotify.Rename:
 				// File renamed -> also called after create, write
 				log.Println("Rename", op.String())
