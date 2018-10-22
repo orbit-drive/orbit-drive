@@ -44,7 +44,10 @@ func (s *Watcher) Start() {
 			case fsnotify.Create:
 				// File created
 				log.Println("Create", op.String())
-				NewFile(op.Name)
+				err := NewFile(op.Name)
+				if err != nil {
+					log.Println(err)
+				}
 			case fsnotify.Rename:
 				// File renamed -> also called after create, write
 				log.Println("Rename", op.String())
@@ -93,6 +96,7 @@ func startNotifier(p string) (chan fsnotify.Event, chan error) {
 		}
 	}()
 
+	// Implement recursive watcher < only goes 1 level deep.
 	if err = w.Add(p); err != nil {
 		log.Fatalln(err)
 	}

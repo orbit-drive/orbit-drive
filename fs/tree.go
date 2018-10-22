@@ -1,10 +1,11 @@
 package fs
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -59,6 +60,12 @@ func (vn *VNode) SetSource(s FileStore) {
 	}
 }
 
+// GenChildId returns a hash from the current vnode id and the given path.
+func (vn *VNode) GenChildId(p string) []byte {
+	i := append(vn.Id, p...)
+	return HashStr(ToStr(i))
+}
+
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
 func InitVTree(path string, s FileStore) error {
 	VTree = &VNode{
@@ -80,17 +87,18 @@ func InitVTree(path string, s FileStore) error {
 // add a new vnode.
 func NewFile(path string) error {
 	dir := filepath.Dir(path)
-	vn, err := VTree.FindNodeAt(dir)
+	vn, err := VTree.FindChildAt(dir)
 	if err != nil {
 		return err
 	}
 	n := vn.NewVNode(path)
-	fi, err := os.Stat(path)
+	isDir, err := IsDir(path)
 	if err != nil {
 		return err
 	}
-	if fi.IsDir() {
+	if isDir {
 		n.SetAsDir()
+		// Read file content and upload
 		n.PopulateNodes(FileStore{})
 	} else {
 		n.SetAsFile()
@@ -161,14 +169,51 @@ func (vn *VNode) Save() error {
 	return Db.Put(vn.Id, ToByte(vn.Source), nil)
 }
 
-// AddNode traverse a VTree to the given path and calls PopulateNodes.
-func (vn *VNode) FindNodeAt(path string) (*VNode, error) {
-	// Implement find node here, currently just returns the root
+// FindChildAt perform a full traversal to look a vnode from a given path.
+func (vn *VNode) FindChildAt(path string) (*VNode, error) {
+	if vn.Path == path {
+		return vn, nil
+	}
+	return vn.Traverse(path)
+}
 
-	return vn, nil
+func (vn *VNode) Traverse(path string) (*VNode, error) {
+	rel, err := filepath.Rel(vn.Path, path)
+	if err != nil {
+		return vn, err
+	}
+	dir := filepath.Dir(rel)
+	steps := strings.Split(dir, "/")
+	currNode := vn
+
+	for _, step := range steps {
+		pathToFind := currNode.Path + step
+		_id := currNode.GenChildId(pathToFind)
+		link, err := currNode.FindChild(_id)
+		if err != nil {
+			return vn, err
+		}
+		currNode = link
+	}
+
+	return currNode, nil
+}
+
+// FindChild look for a given id from its Links (1 level).
+func (vn *VNode) FindChild(i []byte) (*VNode, error) {
+	if vn.Type == FileCode {
+		return vn, ErrNotADir
+	}
+
+	for _, n := range vn.Links {
+		if bytes.Equal(n.Id, i) {
+			return n, nil
+		}
+	}
+	return vn, ErrVNodeNotFound
 }
 
 // RemoveNode traverse a VTree and remove the VNode at the given path.
-func (vn *VNode) RemoveNode(path string) error {
+func (vn *VNode) UnlinkChild(path string) error {
 	return nil
 }

@@ -8,6 +8,15 @@ import (
 	"path/filepath"
 )
 
+// Dir helpers
+func IsDir(path string) (bool, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	return fi.IsDir(), nil
+}
+
 func GetHomeDir() string {
 	usr, err := user.Current()
 	if err != nil {
@@ -24,6 +33,7 @@ func GetCurrentDir() string {
 	return dir
 }
 
+// String parsing helpers
 func HashStr(p string) []byte {
 	hash := sha256.Sum256(ToByte(p))
 	return hash[:]

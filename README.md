@@ -2,12 +2,23 @@
 
 Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + [Infura](https://infura.io)
 
+## Requirements
+
+- golang 1.9
+- [ipfs](https://docs.ipfs.io/introduction/install/) (if running a gateway locally)
+
 ## Ubuntu 16.04
 
 - CLI
 
+Initialize user settings
 ```bash
-go run main.go -root=/{folder_to_sync}
+go run orbit-drive.go init -r [Path of folder to sync] -p [Password] -n [Ipfs gateway]
+```
+
+Start synchronizing folder
+```bash
+go run orbit-drive sync
 ```
 
 - Register Service
