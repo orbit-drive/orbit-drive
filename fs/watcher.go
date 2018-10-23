@@ -1,20 +1,29 @@
 package fs
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
+	"path"
+	"sync"
 
 	"github.com/fsnotify/fsnotify"
 )
 
-// Watcher represents a path to watch for usr changes.
+// Watcher is a wrapper to fsnotify watcher and represents
+// a path to watch for usr changes.
 type Watcher struct {
 	// Done channel used to indicate when to stop the watcher
 	Done chan bool
 
 	// Path is absolute path to watch.
 	Path string
+
+	// Notifier holds the fs watcher
+	Notifier *fsnotify.Watcher
 }
 
+// NewWatcher initialize a new Watcher.
 func NewWatcher(p string) *Watcher {
 	return &Watcher{
 		Done: make(chan bool),
@@ -22,84 +31,88 @@ func NewWatcher(p string) *Watcher {
 	}
 }
 
-func (s *Watcher) Stop() {
-	s.Done <- true
+// InitNotifier initialize the wrapped fs watcher and populate its watch list.
+func (w *Watcher) InitNotifier() {
+	n, err := fsnotify.NewWatcher()
+	if err != nil {
+		// To figure out how to deal with error here <<
+		fmt.Println(err)
+	}
+	populateWatchlist(n, w.Path)
+	w.Notifier = n
 }
 
-func (s *Watcher) Start() {
-	ops, errs := startNotifier(s.Path)
-	defer close(ops)
-	defer close(errs)
+func (w *Watcher) Start() {
+	w.InitNotifier()
 
 	for {
 		select {
-		case op := <-ops:
-			if op.Op.String() == "" {
+		case e := <-w.Notifier.Events:
+			if e.Op.String() == "" {
 				continue
 			}
-			switch op.Op {
+			switch e.Op {
 			case fsnotify.Chmod:
 				// Change in file permission
-				log.Println("Write", op.String())
+				log.Println("Write", e.String())
 			case fsnotify.Create:
 				// File created
-				log.Println("Create", op.String())
-				err := NewFile(op.Name)
+				log.Println("Create", e.String())
+				err := NewFile(e.Name)
 				if err != nil {
 					log.Println(err)
 				}
 			case fsnotify.Rename:
 				// File renamed -> also called after create, write
-				log.Println("Rename", op.String())
+				log.Println("Rename", e.String())
 			case fsnotify.Remove:
 				// File removed
-				log.Println("Remove", op.String())
+				log.Println("Remove", e.String())
 			case fsnotify.Write:
 				// File modified or moved
-				log.Println("Write", op.String())
+				log.Println("Write", e.String())
 			default:
 				continue
 			}
-		case err := <-errs:
+		case err := <-w.Notifier.Errors:
 			log.Println(err)
-		case <-s.Done:
+		case <-w.Done:
 			log.Println("Ipfsync stopped.")
 			return
 		}
 	}
 }
 
-// startNotifier is a wrapper around fsnotify package.
-func startNotifier(p string) (chan fsnotify.Event, chan error) {
-	w, err := fsnotify.NewWatcher()
+// Stop close the fs watcher and triggers the Done channel.
+func (w *Watcher) Stop() {
+	w.Notifier.Close()
+	w.Done <- true
+}
+
+// populateWatchlist is a recursive func that traverse all nested
+// dir of the given path and adds them to the fsnotify watch list.
+func populateWatchlist(w *fsnotify.Watcher, p string) {
+	var wg sync.WaitGroup
+	if err := w.Add(p); err != nil {
+		w.Errors <- err
+	}
+	fmt.Println("Watching: ", p)
+
+	files, err := ioutil.ReadDir(p)
 	if err != nil {
-		log.Fatalln(err)
+		w.Errors <- err
+		return
 	}
 
-	ops := make(chan fsnotify.Event)
-	errs := make(chan error)
-
-	go func() {
-		for {
-			select {
-			case event, ok := <-w.Events:
-				if !ok {
-					return
-				}
-				ops <- event
-			case err, ok := <-w.Errors:
-				if !ok {
-					return
-				}
-				errs <- err
-			}
+	for _, f := range files {
+		if f.IsDir() {
+			wg.Add(1)
+			go func() {
+				filepath := path.Join(p, f.Name())
+				populateWatchlist(w, filepath)
+				wg.Done()
+			}()
 		}
-	}()
-
-	// Implement recursive watcher < only goes 1 level deep.
-	if err = w.Add(p); err != nil {
-		log.Fatalln(err)
 	}
-
-	return ops, errs
+	wg.Wait()
 }
