@@ -41,12 +41,12 @@ func (w *Watcher) InitNotifier() {
 		fmt.Println(err)
 	}
 	w.Notifier = n
-	w.PopulateWatchList(w.Path)
+	w.AddToWatchList(w.Path)
 }
 
-// PopulateWatchList traverse a path and add all nested dir
+// AddToWatchList traverse a path and add all nested dir
 // path to the notifier watch list.
-func (w *Watcher) PopulateWatchList(p string) {
+func (w *Watcher) AddToWatchList(p string) {
 	cb := func(path string) {
 		if err := w.Notifier.Add(path); err != nil {
 			w.Notifier.Errors <- err
@@ -79,25 +79,15 @@ func (w *Watcher) Start() {
 			}
 			switch e.Op {
 			case fsnotify.Chmod:
-				// Change in file permission
-				log.Println("Write", e.String())
+				chmodHandler(w, e.Name)
 			case fsnotify.Create:
-				// File created
-				log.Println("Create", e.String())
-				err := NewFile(e.Name)
-				if err != nil {
-					log.Println(err)
-				}
+				createHandler(w, e.Name)
 			case fsnotify.Rename:
-				// File renamed -> also called after create, write
-				log.Println("Rename", e.String())
+				renameHandler(w, e.Name)
 			case fsnotify.Remove:
-				// File removed
-				log.Println("Remove", e.String())
-				w.RemoveFromWatchList(e.Name)
+				removeHandler(w, e.Name)
 			case fsnotify.Write:
-				// File modified or moved
-				log.Println("Write", e.String())
+				writeHandler(w, e.Name)
 			default:
 				continue
 			}
@@ -114,6 +104,36 @@ func (w *Watcher) Start() {
 func (w *Watcher) Stop() {
 	w.Notifier.Close()
 	w.Done <- true
+}
+
+func chmodHandler(w *Watcher, p string) {
+	log.Println("Write", p)
+}
+
+func createHandler(w *Watcher, p string) {
+	log.Println("Create", p)
+	err := NewFile(p)
+	if err != nil {
+		log.Println(err)
+	}
+	if isDir, _ := IsDir(p); isDir {
+		w.AddToWatchList(p)
+	}
+}
+
+func renameHandler(w *Watcher, p string) {
+	log.Println("Rename", p)
+}
+
+func removeHandler(w *Watcher, p string) {
+	log.Println("Remove", p)
+	if isDir, _ := IsDir(p); isDir {
+		w.RemoveFromWatchList(p)
+	}
+}
+
+func writeHandler(w *Watcher, p string) {
+	log.Println("Write", p)
 }
 
 // populateWatchlist is a recursive func that traverse all nested
