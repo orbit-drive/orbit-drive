@@ -10,6 +10,8 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
+type Callback func(string)
+
 // Watcher is a wrapper to fsnotify watcher and represents
 // a path to watch for usr changes.
 type Watcher struct {
@@ -38,10 +40,34 @@ func (w *Watcher) InitNotifier() {
 		// To figure out how to deal with error here <<
 		fmt.Println(err)
 	}
-	populateWatchlist(n, w.Path)
 	w.Notifier = n
+	w.PopulateWatchList(w.Path)
 }
 
+// PopulateWatchList traverse a path and add all nested dir
+// path to the notifier watch list.
+func (w *Watcher) PopulateWatchList(p string) {
+	cb := func(path string) {
+		if err := w.Notifier.Add(path); err != nil {
+			w.Notifier.Errors <- err
+		}
+	}
+	traversePath(p, cb)
+}
+
+// RemoveFromWatchList traverse a path and remove all nested dir
+// path from the notifier watch list.
+func (w *Watcher) RemoveFromWatchList(p string) {
+	cb := func(path string) {
+		if err := w.Notifier.Remove(path); err != nil {
+			w.Notifier.Errors <- err
+		}
+	}
+	traversePath(p, cb)
+}
+
+// Start initialize watcher notifier and check for the notifier
+// Event channel and Errors channel.
 func (w *Watcher) Start() {
 	w.InitNotifier()
 
@@ -68,6 +94,7 @@ func (w *Watcher) Start() {
 			case fsnotify.Remove:
 				// File removed
 				log.Println("Remove", e.String())
+				w.RemoveFromWatchList(e.Name)
 			case fsnotify.Write:
 				// File modified or moved
 				log.Println("Write", e.String())
@@ -91,16 +118,12 @@ func (w *Watcher) Stop() {
 
 // populateWatchlist is a recursive func that traverse all nested
 // dir of the given path and adds them to the fsnotify watch list.
-func populateWatchlist(w *fsnotify.Watcher, p string) {
+func traversePath(p string, cb Callback) {
 	var wg sync.WaitGroup
-	if err := w.Add(p); err != nil {
-		w.Errors <- err
-	}
-	fmt.Println("Watching: ", p)
 
 	files, err := ioutil.ReadDir(p)
 	if err != nil {
-		w.Errors <- err
+		log.Println(err)
 		return
 	}
 
@@ -109,10 +132,12 @@ func populateWatchlist(w *fsnotify.Watcher, p string) {
 			wg.Add(1)
 			go func() {
 				filepath := path.Join(p, f.Name())
-				populateWatchlist(w, filepath)
+				traversePath(filepath, cb)
 				wg.Done()
 			}()
 		}
 	}
+
 	wg.Wait()
+	cb(p)
 }
