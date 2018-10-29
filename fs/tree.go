@@ -7,12 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/wlwanpan/orbit-drive/db"
 )
 
 const (
-	// leveldb key to store the root tree
-	ROOT_KEY string = "ROOT_TREE"
-
 	// File type constants
 	FileCode = iota
 	DirCode  = iota
@@ -52,8 +52,8 @@ func (vn *VNode) SetAsFile() {
 }
 
 // SetSource set the vnode source to the cached source if present.
-func (vn *VNode) SetSource(s FileStore) {
-	i := ToStr(vn.Id)
+func (vn *VNode) SetSource(s db.FileStore) {
+	i := common.ToStr(vn.Id)
 	if src, ok := s[i]; ok {
 		vn.Source = src
 		delete(s, i)
@@ -63,14 +63,14 @@ func (vn *VNode) SetSource(s FileStore) {
 // GenChildId returns a hash from the current vnode id and the given path.
 func (vn *VNode) GenChildId(p string) []byte {
 	i := append(vn.Id, p...)
-	return HashStr(ToStr(i))
+	return common.HashStr(common.ToStr(i))
 }
 
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
-func InitVTree(path string, s FileStore) error {
+func InitVTree(path string, s db.FileStore) error {
 	VTree = &VNode{
-		Id:     ToByte(ROOT_KEY),
 		Path:   path, // To optimize here -> start with "/" not abs path
+		Id:     common.ToByte(common.ROOT_KEY),
 		Type:   DirCode,
 		Links:  []*VNode{},
 		Source: "",
@@ -92,14 +92,14 @@ func NewFile(path string) error {
 		return err
 	}
 	n := vn.NewVNode(path)
-	isDir, err := IsDir(path)
+	isDir, err := common.IsDir(path)
 	if err != nil {
 		return err
 	}
 	if isDir {
 		n.SetAsDir()
 		// Read file content and upload
-		n.PopulateNodes(FileStore{})
+		n.PopulateNodes(db.FileStore{})
 	} else {
 		n.SetAsFile()
 		n.Save()
@@ -111,7 +111,7 @@ func NewFile(path string) error {
 func (vn *VNode) NewVNode(path string) *VNode {
 	i := append(vn.Id, path...)
 	n := &VNode{
-		Id:     HashStr(ToStr(i)),
+		Id:     common.HashStr(common.ToStr(i)),
 		Path:   path,
 		Links:  []*VNode{},
 		Source: "",
@@ -122,7 +122,7 @@ func (vn *VNode) NewVNode(path string) *VNode {
 
 // PopulateNodes read a path and populate the its links given
 // the path is a directory else creates a file node.
-func (vn *VNode) PopulateNodes(s FileStore) error {
+func (vn *VNode) PopulateNodes(s db.FileStore) error {
 	files, err := ioutil.ReadDir(vn.Path)
 	if err != nil {
 		return err
@@ -166,7 +166,7 @@ func (vn *VNode) Save() error {
 		}
 		vn.Source = s
 	}
-	return Db.Put(vn.Id, ToByte(vn.Source), nil)
+	return db.Db.Put(vn.Id, common.ToByte(vn.Source), nil)
 }
 
 // FindChildAt perform a full traversal to look a vnode from a given path.

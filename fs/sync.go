@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+
+	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/wlwanpan/orbit-drive/db"
 )
 
-func Sync(c *Config) {
+func Sync(c *db.Config) {
 	fmt.Println("Starting orbit file sync, watching: ", c.Root)
 	defer fmt.Println("Orbit sync stopped.")
 
@@ -14,7 +17,7 @@ func Sync(c *Config) {
 	InitShell(c.Node)
 
 	// Get previouly stored files.
-	fStore, err := GetFileStore()
+	fStore, err := db.GetFileStore()
 	if err != nil {
 		log.Println(err)
 	}
@@ -23,7 +26,7 @@ func Sync(c *Config) {
 	err = InitVTree(c.Root, fStore)
 	if err != nil {
 		// Delete prev files saved but no longer present in file system.
-		RunGarbageCollection(fStore)
+		fStore.Dump()
 	}
 
 	// Logs the json representation of the loaded VTree
@@ -31,7 +34,7 @@ func Sync(c *Config) {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println(ToStr(data))
+	log.Println(common.ToStr(data))
 
 	// Init and Start file watcher
 	w := NewWatcher(c.Root)

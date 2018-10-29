@@ -7,6 +7,7 @@ import (
 	"syscall"
 
 	"github.com/akamensky/argparse"
+	"github.com/wlwanpan/orbit-drive/db"
 	"github.com/wlwanpan/orbit-drive/fs"
 )
 
@@ -39,8 +40,8 @@ func main() {
 	}
 
 	// init leveldb
-	fs.InitDb()
-	defer fs.Db.Close()
+	db.InitDb()
+	defer db.CloseDb()
 
 	// System close handling
 	close := make(chan os.Signal, 2)
@@ -48,7 +49,7 @@ func main() {
 	go func() {
 		<-close
 		fmt.Println("Stopping synchronization...")
-		fs.Db.Close()
+		db.CloseDb()
 		// Need to also close watcher
 		os.Exit(0)
 	}()
@@ -56,14 +57,14 @@ func main() {
 	// Call usr command
 	switch true {
 	case initCmd.Happened():
-		err := fs.NewConfig(*root, *nodeAddr, *password)
+		err := db.NewConfig(*root, *nodeAddr, *password)
 		if err != nil {
 			fmt.Println(p.Usage(err))
 			os.Exit(0)
 		}
 		fmt.Println("Configured! Run the following command to start syncing: orbit-drive sync")
 	case syncCmd.Happened():
-		c, err := fs.LoadConfig()
+		c, err := db.LoadConfig()
 		if err != nil {
 			fmt.Println(p.Usage(err))
 			os.Exit(0)

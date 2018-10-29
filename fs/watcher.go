@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/wlwanpan/orbit-drive/common"
 )
 
 type Callback func(string)
@@ -116,7 +117,7 @@ func createHandler(w *Watcher, p string) {
 	if err != nil {
 		log.Println(err)
 	}
-	if isDir, _ := IsDir(p); isDir {
+	if isDir, _ := common.IsDir(p); isDir {
 		w.AddToWatchList(p)
 	}
 }
@@ -127,7 +128,7 @@ func renameHandler(w *Watcher, p string) {
 
 func removeHandler(w *Watcher, p string) {
 	log.Println("Remove", p)
-	if isDir, _ := IsDir(p); isDir {
+	if isDir, _ := common.IsDir(p); isDir {
 		w.RemoveFromWatchList(p)
 	}
 }

@@ -1,13 +1,10 @@
-package fs
+package db
 
 import (
 	"encoding/json"
 
+	"github.com/wlwanpan/orbit-drive/common"
 	"golang.org/x/crypto/bcrypt"
-)
-
-const (
-	CONFIG_KEY string = "CONFIG"
 )
 
 // Config represents the usr configuration settings
@@ -25,10 +22,10 @@ type Config struct {
 // NewConfig initialize a new usr config and save it.
 func NewConfig(root, node, p string) error {
 	if root == "" {
-		root = GetCurrentDir()
+		root = common.GetCurrentDir()
 	}
 
-	hash, err := bcrypt.GenerateFromPassword(ToByte(p), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword(common.ToByte(p), bcrypt.DefaultCost)
 	if err != nil {
 		return err
 	}
@@ -36,14 +33,14 @@ func NewConfig(root, node, p string) error {
 	c := &Config{
 		Root:     root,
 		Node:     node,
-		Password: ToStr(hash),
+		Password: common.ToStr(hash),
 	}
 	return c.Save()
 }
 
 // LoadConfig loads a stored config from: (defaults: ~/.orbit-drive/.config)
 func LoadConfig() (*Config, error) {
-	data, err := Db.Get(ToByte(CONFIG_KEY), nil)
+	data, err := Db.Get(common.ToByte(common.CONFIG_KEY), nil)
 	if err != nil {
 		return &Config{}, err
 	}
@@ -61,5 +58,5 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	return Db.Put(ToByte(CONFIG_KEY), p, nil)
+	return Db.Put(common.ToByte(common.CONFIG_KEY), p, nil)
 }
