@@ -83,30 +83,6 @@ func InitVTree(path string, s db.FileStore) error {
 	return nil
 }
 
-// NewFile traverse VTree to locate path parent dir and
-// add a new vnode.
-func NewFile(path string) error {
-	dir := filepath.Dir(path)
-	vn, err := VTree.FindChildAt(dir)
-	if err != nil {
-		return err
-	}
-	n := vn.NewVNode(path)
-	isDir, err := common.IsDir(path)
-	if err != nil {
-		return err
-	}
-	if isDir {
-		n.SetAsDir()
-		// Read file content and upload
-		n.PopulateNodes(db.FileStore{})
-	} else {
-		n.SetAsFile()
-		n.Save()
-	}
-	return nil
-}
-
 // NewVNode initialize and returns a new VNode under current vnode.
 func (vn *VNode) NewVNode(path string) *VNode {
 	i := append(vn.Id, path...)
@@ -166,7 +142,7 @@ func (vn *VNode) Save() error {
 		}
 		vn.Source = s
 	}
-	return db.Db.Put(vn.Id, common.ToByte(vn.Source), nil)
+	return db.Put(vn.Id, common.ToByte(vn.Source))
 }
 
 // FindChildAt perform a full traversal to look a vnode from a given path.

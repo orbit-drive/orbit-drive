@@ -1,4 +1,4 @@
-package fs
+package main
 
 import (
 	"encoding/json"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/db"
+	"github.com/wlwanpan/orbit-drive/fs"
 )
 
 func Sync(c *db.Config) {
@@ -14,7 +15,7 @@ func Sync(c *db.Config) {
 	defer fmt.Println("Orbit sync stopped.")
 
 	// Init ipfs api shell
-	InitShell(c.Node)
+	fs.InitShell(c.Node)
 
 	// Get previouly stored files.
 	fStore, err := db.GetFileStore()
@@ -23,20 +24,20 @@ func Sync(c *db.Config) {
 	}
 
 	// Load Tree from Db and Gen diffing Tree
-	err = InitVTree(c.Root, fStore)
+	err = fs.InitVTree(c.Root, fStore)
 	if err != nil {
 		// Delete prev files saved but no longer present in file system.
 		fStore.Dump()
 	}
 
 	// Logs the json representation of the loaded VTree
-	data, err := json.MarshalIndent(&VTree, "", "	")
+	data, err := json.MarshalIndent(&fs.VTree, "", "	")
 	if err != nil {
 		log.Println(err)
 	}
 	log.Println(common.ToStr(data))
 
 	// Init and Start file watcher
-	w := NewWatcher(c.Root)
+	w := fs.NewWatcher(c.Root)
 	w.Start()
 }

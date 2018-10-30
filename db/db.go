@@ -26,6 +26,10 @@ func InitDb() {
 	}
 }
 
+func Put(k []byte, v []byte) error {
+	return Db.Put(k, v, nil)
+}
+
 func CloseDb() {
 	Db.Close()
 }
