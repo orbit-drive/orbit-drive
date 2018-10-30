@@ -171,32 +171,12 @@ func (vn *VNode) Save() error {
 
 // FindChildAt perform a full traversal to look a vnode from a given path.
 func (vn *VNode) FindChildAt(path string) (*VNode, error) {
-	if vn.Path == path {
-		return vn, nil
-	}
-	return vn.Traverse(path)
-}
-
-func (vn *VNode) Traverse(path string) (*VNode, error) {
 	rel, err := filepath.Rel(vn.Path, path)
-	if err != nil {
+	if err != nil || rel == "." {
 		return vn, err
 	}
-	dir := filepath.Dir(rel)
-	steps := strings.Split(dir, "/")
-	currNode := vn
-
-	for _, step := range steps {
-		pathToFind := currNode.Path + step
-		_id := currNode.GenChildId(pathToFind)
-		link, err := currNode.FindChild(_id)
-		if err != nil {
-			return vn, err
-		}
-		currNode = link
-	}
-
-	return currNode, nil
+	steps := strings.Split(rel, "/")
+	return vn.traverse(steps)
 }
 
 // FindChild look for a given id from its Links (1 level).
@@ -216,4 +196,23 @@ func (vn *VNode) FindChild(i []byte) (*VNode, error) {
 // RemoveNode traverse a VTree and remove the VNode at the given path.
 func (vn *VNode) UnlinkChild(path string) error {
 	return nil
+}
+
+// traverse traverse a VNode 1 level at a time down the tree.
+func (vn *VNode) traverse(steps []string) (*VNode, error) {
+	if len(steps) == 0 {
+		return vn, nil
+	}
+
+	for _, step := range steps {
+		p := filepath.Join(vn.Path, step)
+		i := vn.GenChildId(p)
+
+		link, err := vn.FindChild(i)
+		if err != nil {
+			return vn, err
+		}
+		vn = link
+	}
+	return vn, nil
 }
