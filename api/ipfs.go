@@ -1,4 +1,4 @@
-package fs
+package api
 
 import (
 	"log"
@@ -8,23 +8,19 @@ import (
 )
 
 var (
+	// Shell holds a ipfs shell instance for access to the
+	// the ipfs network. (Default: Infura node)
 	Shell *shell.Shell
 )
 
+// InitShell initialize a new shell.
 func InitShell(addr string) {
 	Shell = shell.NewShell(addr)
 }
 
+// UploadFile takes a file path and upload it to ipfs
+// and return the generate hash.
 func UploadFile(p string) (string, error) {
-	fi, err := os.Stat(p)
-	if err != nil {
-		return "", err
-	}
-	if fi.IsDir() {
-		log.Println("Path provided is not a file: ", p)
-		return "", ErrInValidPath
-	}
-
 	f, _ := os.Open(p)
 	log.Println("Uploading file: ", p)
 	cid, err := Shell.Add(f)

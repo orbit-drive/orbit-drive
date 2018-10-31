@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/wlwanpan/orbit-drive/api"
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/db"
 )
@@ -131,11 +132,12 @@ func (vn *VNode) PopulateNodes(s db.FileStore) error {
 	return nil
 }
 
-// Save
+// Save upload a file path to the ipfs network and
+// save the return hash as the source of the vnode.
 func (vn *VNode) Save() error {
-	// If ipfs hash not present, then upload to network
+	// If ipfs hash empty, then upload to network
 	if vn.Source == "" {
-		s, err := UploadFile(vn.Path)
+		s, err := api.UploadFile(vn.Path)
 		if err != nil {
 			fmt.Println(err)
 			return err

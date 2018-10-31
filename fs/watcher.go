@@ -60,6 +60,7 @@ func (w *Watcher) AddToWatchList(p string) {
 // path from the notifier watch list.
 func (w *Watcher) RemoveFromWatchList(p string) {
 	cb := func(path string) {
+		log.Println("Removed from watch list: ", path)
 		if err := w.Notifier.Remove(path); err != nil {
 			w.Notifier.Errors <- err
 		}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/akamensky/argparse"
 	"github.com/wlwanpan/orbit-drive/db"
+	"github.com/wlwanpan/orbit-drive/fs"
 )
 
 func main() {
@@ -68,7 +69,7 @@ func main() {
 			fmt.Println(p.Usage(err))
 			os.Exit(0)
 		}
-		Sync(c)
+		fs.Run(c)
 	default:
 		os.Exit(0)
 	}
