@@ -5,10 +5,10 @@ import (
 	"github.com/wlwanpan/orbit-drive/common"
 )
 
-type FileStore map[string]string
+type Sources map[string]string
 
-func GetFileStore() (FileStore, error) {
-	store := make(FileStore)
+func GetSources() (Sources, error) {
+	store := make(Sources)
 	iter := Db.NewIterator(nil, nil)
 	for iter.Next() {
 		k := common.ToStr(iter.Key())
@@ -22,12 +22,12 @@ func GetFileStore() (FileStore, error) {
 	iter.Release()
 	err := iter.Error()
 	if err != nil {
-		return FileStore{}, err
+		return Sources{}, err
 	}
 	return store, nil
 }
 
-func (s FileStore) Dump() error {
+func (s Sources) Dump() error {
 	b := new(leveldb.Batch)
 	for k, _ := range s {
 		b.Delete(common.ToByte(k))
@@ -35,7 +35,7 @@ func (s FileStore) Dump() error {
 	return Db.Write(b, nil)
 }
 
-func (s FileStore) Save() error {
+func (s Sources) Save() error {
 	b := new(leveldb.Batch)
 	for k, v := range s {
 		b.Put(common.ToByte(k), common.ToByte(v))

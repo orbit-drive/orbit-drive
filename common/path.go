@@ -1,14 +1,23 @@
 package common
 
 import (
-	"crypto/sha256"
 	"log"
 	"os"
 	"os/user"
 	"path/filepath"
 )
 
-// Dir helpers
+func PathExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return true
+}
+
 func IsDir(path string) (bool, error) {
 	fi, err := os.Stat(path)
 	if err != nil {
@@ -31,18 +40,4 @@ func GetCurrentDir() string {
 		log.Fatal(err)
 	}
 	return dir
-}
-
-// String parsing helpers
-func HashStr(p string) []byte {
-	hash := sha256.Sum256(ToByte(p))
-	return hash[:]
-}
-
-func ToByte(s string) []byte {
-	return []byte(s)
-}
-
-func ToStr(b []byte) string {
-	return string(b[:])
 }

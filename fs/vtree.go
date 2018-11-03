@@ -8,9 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/wlwanpan/orbit-drive/api"
 	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/db"
+	"github.com/wlwanpan/orbit-drive/fs/api"
+	"github.com/wlwanpan/orbit-drive/fs/db"
 )
 
 const (
@@ -53,7 +53,7 @@ func (vn *VNode) SetAsFile() {
 }
 
 // SetSource set the vnode source to the cached source if present.
-func (vn *VNode) SetSource(s db.FileStore) {
+func (vn *VNode) SetSource(s db.Sources) {
 	i := common.ToStr(vn.Id)
 	if src, ok := s[i]; ok {
 		vn.Source = src
@@ -68,7 +68,7 @@ func (vn *VNode) GenChildId(p string) []byte {
 }
 
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
-func InitVTree(path string, s db.FileStore) error {
+func InitVTree(path string, s db.Sources) error {
 	VTree = &VNode{
 		Path:   path, // To optimize here -> start with "/" not abs path
 		Id:     common.ToByte(common.ROOT_KEY),
@@ -99,7 +99,7 @@ func (vn *VNode) NewVNode(path string) *VNode {
 
 // PopulateNodes read a path and populate the its links given
 // the path is a directory else creates a file node.
-func (vn *VNode) PopulateNodes(s db.FileStore) error {
+func (vn *VNode) PopulateNodes(s db.Sources) error {
 	files, err := ioutil.ReadDir(vn.Path)
 	if err != nil {
 		return err

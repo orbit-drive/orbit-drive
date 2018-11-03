@@ -1,9 +1,10 @@
-package db
+package fs
 
 import (
 	"encoding/json"
 
 	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/wlwanpan/orbit-drive/fs/db"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -40,7 +41,7 @@ func NewConfig(root, node, p string) error {
 
 // LoadConfig loads a stored config from: (defaults: ~/.orbit-drive/.config)
 func LoadConfig() (*Config, error) {
-	data, err := Db.Get(common.ToByte(common.CONFIG_KEY), nil)
+	data, err := db.Get(common.ToByte(common.CONFIG_KEY))
 	if err != nil {
 		return &Config{}, err
 	}
@@ -58,5 +59,5 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	return Db.Put(common.ToByte(common.CONFIG_KEY), p, nil)
+	return db.Put(common.ToByte(common.CONFIG_KEY), p)
 }

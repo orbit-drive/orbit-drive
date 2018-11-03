@@ -7,8 +7,8 @@ import (
 	"syscall"
 
 	"github.com/akamensky/argparse"
-	"github.com/wlwanpan/orbit-drive/db"
 	"github.com/wlwanpan/orbit-drive/fs"
+	"github.com/wlwanpan/orbit-drive/fs/db"
 )
 
 func main() {
@@ -57,14 +57,14 @@ func main() {
 	// Call usr command
 	switch true {
 	case initCmd.Happened():
-		err := db.NewConfig(*root, *nodeAddr, *password)
+		err := fs.NewConfig(*root, *nodeAddr, *password)
 		if err != nil {
 			fmt.Println(p.Usage(err))
 			os.Exit(0)
 		}
 		fmt.Println("Configured! Run the following command to start syncing: orbit-drive sync")
 	case syncCmd.Happened():
-		c, err := db.LoadConfig()
+		c, err := fs.LoadConfig()
 		if err != nil {
 			fmt.Println(p.Usage(err))
 			os.Exit(0)

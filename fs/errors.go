@@ -13,4 +13,7 @@ var (
 
 	// ErrVNodeNotFound is returned when a vnode is missing a Link.
 	ErrVNodeNotFound = errors.New("VNode does not exist.")
+
+	// ErrInValidPath is returned when the given path does not exist in the system.
+	ErrInvalidPath = errors.New("File path is invalid.")
 )

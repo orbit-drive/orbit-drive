@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/db"
+	"github.com/wlwanpan/orbit-drive/fs/db"
 )
 
 // NewFile traverse VTree to locate path parent dir and
@@ -23,7 +23,7 @@ func NewFile(path string) error {
 	if isDir {
 		n.SetAsDir()
 		// Read file content and upload
-		n.PopulateNodes(db.FileStore{})
+		n.PopulateNodes(db.Sources{})
 	} else {
 		n.SetAsFile()
 		n.Save()
