@@ -1,11 +1,51 @@
 package db
 
 import (
+	"encoding/json"
+	"log"
+
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/wlwanpan/orbit-drive/common"
 )
 
-type Sources map[string]string
+// Source represents the meta data of a file stored locally.
+type Source struct {
+	// ipfs hash
+	Src string `json:src`
+
+	// file size
+	Size int `json:size`
+
+	// file md5 checksum
+	Checksum string `json:checksum`
+}
+
+type Sources map[string]*Source
+
+func (s *Source) SetSrc(src string) {
+	s.Src = src
+}
+
+func (s Source) GetSrc() string {
+	return s.Src
+}
+
+func (s *Source) IsUploaded() bool {
+	return s.GetSrc() == ""
+}
+
+func (s *Source) Save(k []byte) error {
+	data, err := json.Marshal(s)
+	if err != nil {
+		return err
+	}
+	return Put(k, data)
+}
+
+// IsSame check if the 2 sources are the same.
+func (s *Source) IsSame(c *Source) bool {
+	return s.Size == c.Size && s.Checksum == c.Checksum
+}
 
 func GetSources() (Sources, error) {
 	store := make(Sources)
@@ -15,8 +55,13 @@ func GetSources() (Sources, error) {
 		switch k {
 		case common.ROOT_KEY, common.CONFIG_KEY:
 		default:
-			v := common.ToStr(iter.Value())
-			store[k] = v
+			s := &Source{}
+			err := json.Unmarshal(iter.Value(), s)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+			store[k] = s
 		}
 	}
 	iter.Release()
@@ -37,8 +82,13 @@ func (s Sources) Dump() error {
 
 func (s Sources) Save() error {
 	b := new(leveldb.Batch)
-	for k, v := range s {
-		b.Put(common.ToByte(k), common.ToByte(v))
+	for k, source := range s {
+		data, err := json.Marshal(source)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		b.Put(common.ToByte(k), data)
 	}
 	return Db.Write(b, nil)
 }
