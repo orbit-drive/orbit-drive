@@ -21,9 +21,14 @@ func InitShell(addr string) {
 // UploadFile takes a file path and upload it to ipfs
 // and return the generate hash.
 func UploadFile(p string) (string, error) {
-	f, _ := os.Open(p)
+	file, err := os.Open(p)
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
 	log.Println("Uploading file: ", p)
-	cid, err := Shell.Add(f)
+	cid, err := Shell.Add(file)
 	if err != nil {
 		return "", err
 	}

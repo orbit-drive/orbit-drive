@@ -8,6 +8,7 @@ import (
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/fs/api"
 	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
 func Run(c *Config) {
@@ -24,14 +25,14 @@ func Run(c *Config) {
 	}
 
 	// Load Tree from Db and Gen diffing Tree
-	err = InitVTree(c.Root, sources)
+	err = vtree.InitVTree(c.Root, sources)
 	if err != nil {
 		// Delete prev files saved but no longer present in file system.
 		sources.Dump()
 	}
 
 	// Logs the json representation of the loaded VTree
-	data, err := json.MarshalIndent(&VTree, "", "	")
+	data, err := json.MarshalIndent(&vtree.VTree, "", "	")
 	if err != nil {
 		log.Println(err)
 	}

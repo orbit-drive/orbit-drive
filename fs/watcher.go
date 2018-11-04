@@ -9,6 +9,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
 type Callback func(string)
@@ -114,9 +116,10 @@ func chmodHandler(w *Watcher, p string) {
 
 func createHandler(w *Watcher, p string) {
 	log.Println("Create", p)
-	err := NewFile(p)
+	err := vtree.Add(p)
 	if err != nil {
 		log.Println(err)
+		return
 	}
 	if isDir, _ := common.IsDir(p); isDir {
 		w.AddToWatchList(p)
@@ -136,6 +139,17 @@ func removeHandler(w *Watcher, p string) {
 
 func writeHandler(w *Watcher, p string) {
 	log.Println("Write", p)
+	vn, err := vtree.Find(p)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	source := db.NewSource(p)
+	if vn.Source.IsSame(source) {
+		return
+	}
+	vn.Source = source
+	vn.SaveSource()
 }
 
 // populateWatchlist is a recursive func that traverse all nested
