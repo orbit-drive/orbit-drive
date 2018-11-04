@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"path"
+	"path/filepath"
 	"sync"
 
 	"github.com/fsnotify/fsnotify"
@@ -50,24 +50,34 @@ func (w *Watcher) InitNotifier() {
 // AddToWatchList traverse a path and add all nested dir
 // path to the notifier watch list.
 func (w *Watcher) AddToWatchList(p string) {
-	cb := func(path string) {
-		if err := w.Notifier.Add(path); err != nil {
-			w.Notifier.Errors <- err
+	paths, done := pipeDir(p)
+	for {
+		select {
+		case path := <-paths:
+			log.Println(path)
+			if err := w.Notifier.Add(path); err != nil {
+				w.Notifier.Errors <- err
+			}
+		case <-done:
+			return
 		}
 	}
-	traversePath(p, cb)
 }
 
 // RemoveFromWatchList traverse a path and remove all nested dir
 // path from the notifier watch list.
 func (w *Watcher) RemoveFromWatchList(p string) {
-	cb := func(path string) {
-		log.Println("Removed from watch list: ", path)
-		if err := w.Notifier.Remove(path); err != nil {
-			w.Notifier.Errors <- err
+	paths, done := pipeDir(p)
+	for {
+		select {
+		case path := <-paths:
+			if err := w.Notifier.Remove(path); err != nil {
+				w.Notifier.Errors <- err
+			}
+		case <-done:
+			return
 		}
 	}
-	traversePath(p, cb)
 }
 
 // Start initialize watcher notifier and check for the notifier
@@ -154,26 +164,40 @@ func writeHandler(w *Watcher, p string) {
 
 // populateWatchlist is a recursive func that traverse all nested
 // dir of the given path and adds them to the fsnotify watch list.
-func traversePath(p string, cb Callback) {
+func pipeDir(p string) (<-chan string, <-chan bool) {
 	var wg sync.WaitGroup
+	paths := make(chan string)
+	done := make(chan bool)
 
 	files, err := ioutil.ReadDir(p)
 	if err != nil {
 		log.Println(err)
-		return
+		done <- true
 	}
 
 	for _, f := range files {
-		if f.IsDir() {
-			wg.Add(1)
-			go func() {
-				filepath := path.Join(p, f.Name())
-				traversePath(filepath, cb)
-				wg.Done()
-			}()
+		if !f.IsDir() {
+			continue
 		}
+		wg.Add(1)
+		go func() {
+			filepath := filepath.Join(p, f.Name())
+			npaths, ndone := pipeDir(filepath)
+			for {
+				select {
+				case path := <-npaths:
+					paths <- path
+				case <-ndone:
+					wg.Done()
+				}
+			}
+		}()
 	}
 
-	wg.Wait()
-	cb(p)
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
+
+	return paths, done
 }
