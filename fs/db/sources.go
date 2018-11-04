@@ -99,8 +99,8 @@ func GetSources() (Sources, error) {
 	return store, nil
 }
 
-// ExtractSource look for and return a source.
-// If source is found in mapping, it is deleted.
+// ExtractSource look for and return a copy of Source and
+// deletes the key from the mapping.
 func (s Sources) ExtractSource(k string) *Source {
 	source, exist := s[k]
 	if exist {

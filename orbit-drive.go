@@ -9,6 +9,7 @@ import (
 	"github.com/akamensky/argparse"
 	"github.com/wlwanpan/orbit-drive/fs"
 	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/wlwanpan/orbit-drive/fs/sys"
 )
 
 func main() {
@@ -48,7 +49,7 @@ func main() {
 	signal.Notify(close, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-close
-		fmt.Println("Stopping synchronization...")
+		sys.Alert("Stopping file sync!")
 		db.CloseDb()
 		// Need to also close watcher
 		os.Exit(0)

@@ -98,7 +98,6 @@ func (w *Watcher) Start() {
 		case err := <-w.Notifier.Errors:
 			log.Println(err)
 		case <-w.Done:
-			log.Println("Ipfsync stopped.")
 			return
 		}
 	}
@@ -164,14 +163,15 @@ func traversePath(p string, cb Callback) {
 	}
 
 	for _, f := range files {
-		if f.IsDir() {
-			wg.Add(1)
-			go func() {
-				filepath := path.Join(p, f.Name())
-				traversePath(filepath, cb)
-				wg.Done()
-			}()
+		if !f.IsDir() {
+			continue
 		}
+		wg.Add(1)
+		go func() {
+			filepath := path.Join(p, f.Name())
+			traversePath(filepath, cb)
+			wg.Done()
+		}()
 	}
 
 	wg.Wait()
