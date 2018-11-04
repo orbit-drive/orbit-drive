@@ -48,6 +48,14 @@ func (s Source) GetSrc() string {
 	return s.Src
 }
 
+func (s *Source) Copy() *Source {
+	return &Source{
+		Src:      s.GetSrc(),
+		Size:     s.Size,
+		Checksum: s.Checksum,
+	}
+}
+
 func (s *Source) IsUploaded() bool {
 	return s.GetSrc() != ""
 }
@@ -96,9 +104,10 @@ func GetSources() (Sources, error) {
 func (s Sources) ExtractSource(k string) *Source {
 	source, exist := s[k]
 	if exist {
-		delete(s, k)
+		defer delete(s, k)
+		return source.Copy()
 	}
-	return source
+	return &Source{}
 }
 
 // Dump batch deletes all the entries in the mapping.

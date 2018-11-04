@@ -121,17 +121,16 @@ func (vn *VNode) PopulateNodes(s db.Sources) error {
 			continue
 		}
 
-		nn.SetAsFile()
 		source := s.ExtractSource(nn.GetId())
 		if nn.Source.IsSame(source) {
 			nn.SetSource(source)
 			continue
 		}
 		wg.Add(1)
-		go func() {
-			nn.SaveSource()
+		go func(vn *VNode) {
+			vn.SaveSource()
 			wg.Done()
-		}()
+		}(nn)
 	}
 
 	wg.Wait()
