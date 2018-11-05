@@ -23,3 +23,9 @@ func Alert(m ...string) {
 	log.Println(msg)
 	beeep.Alert(NOTIFIER_TITLE, msg, APP_ICON)
 }
+
+func Fatal(m ...string) {
+	msg := strings.Join(m, "")
+	log.Fatalln(msg)
+	beeep.Alert(NOTIFIER_TITLE, msg, APP_ICON)
+}

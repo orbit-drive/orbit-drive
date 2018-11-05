@@ -1,10 +1,11 @@
 package fs
 
 import (
-	"encoding/json"
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
-	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/fs/api"
 	"github.com/wlwanpan/orbit-drive/fs/db"
 	"github.com/wlwanpan/orbit-drive/fs/sys"
@@ -13,31 +14,59 @@ import (
 
 func Run(c *Config) {
 	sys.Notify("Starting file sync!")
+	defer sys.Alert("Stopping file sync!")
+	api.InitShell(c.NodeAddr)
 
-	// Init ipfs api shell
-	api.InitShell(c.Node)
-
-	// Get previouly stored files.
 	sources, err := db.GetSources()
 	if err != nil {
-		log.Println(err)
+		sys.Fatal(err.Error())
 	}
 
-	// Load Tree from Db and Gen diffing Tree
-	err = vtree.InitVTree(c.Root, sources)
-	if err != nil {
-		// Delete prev files saved but no longer present in file system.
+	if err = vtree.InitVTree(c.Root, sources); err != nil {
 		sources.Dump()
 	}
 
-	// Logs the json representation of the loaded VTree
-	data, err := json.MarshalIndent(&vtree.VTree, "", "	")
-	if err != nil {
-		log.Println(err)
-	}
-	log.Println(common.ToStr(data))
+	hub := NewHub()
+	go hub.Start()
+	defer hub.Stop()
 
-	// Init and Start file watcher
-	w := NewWatcher(c.Root)
-	w.Start()
+	watcher := NewWatcher(c.Root)
+	go watcher.Start()
+	defer watcher.Stop()
+
+	error := make(chan error)
+	close := make(chan os.Signal, 2)
+	signal.Notify(close, os.Interrupt, syscall.SIGTERM)
+
+	for {
+		select {
+		case hs := <-hub.State:
+			log.Println(hs.Path + hs.Op)
+		case ws := <-watcher.State:
+			log.Println(ws.Path + ws.Op)
+			switch ws.Op {
+			case "Create":
+				error <- vtree.Add(ws.Path)
+			case "Write":
+				vn, err := vtree.Find(ws.Path)
+				if err != nil {
+					error <- err
+					continue
+				}
+				source := db.NewSource(ws.Path)
+				if vn.Source.IsSame(source) {
+					continue
+				}
+				vn.Source = source
+				vn.SaveSource()
+			default:
+			}
+		case err := <-error:
+			if err != nil {
+				sys.Alert(err.Error())
+			}
+		case <-close:
+			return
+		}
+	}
 }

@@ -2,20 +2,28 @@ package vtree
 
 import (
 	"path/filepath"
+	"sync"
 
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/fs/db"
 )
 
-var (
+// State represents a vtree state change.
+type State struct {
+	Path string
+	Op   string
+}
+
+var VTree struct {
+	sync.Mutex
 	// VTree is the root pointer to the virtual tree of the file
 	// structure being synchronized.
-	VTree *VNode
-)
+	Head *VNode
+}
 
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
 func InitVTree(path string, s db.Sources) error {
-	VTree = &VNode{
+	VTree.Head = &VNode{
 		Path:   path, // To optimize here -> start with "/" not abs path
 		Id:     common.ToByte(common.ROOT_KEY),
 		Type:   DirCode,
@@ -23,21 +31,25 @@ func InitVTree(path string, s db.Sources) error {
 		Source: &db.Source{},
 	}
 
-	err := VTree.PopulateNodes(s)
+	err := PopulateNodes(s)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+func PopulateNodes(s db.Sources) error {
+	return VTree.Head.PopulateNodes(s)
+}
+
 func Find(path string) (*VNode, error) {
-	return VTree.FindChildAt(path)
+	return VTree.Head.FindChildAt(path)
 }
 
 // NewFile traverse VTree to locate path parent dir and add a new vnode.
 func Add(path string) error {
 	dir := filepath.Dir(path)
-	vn, err := VTree.FindChildAt(dir)
+	vn, err := VTree.Head.FindChildAt(dir)
 	if err != nil {
 		return err
 	}

@@ -2,14 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/akamensky/argparse"
 	"github.com/wlwanpan/orbit-drive/fs"
 	"github.com/wlwanpan/orbit-drive/fs/db"
-	"github.com/wlwanpan/orbit-drive/fs/sys"
 )
 
 func main() {
@@ -34,41 +32,24 @@ func main() {
 	// sync command
 	syncCmd := p.NewCommand("sync", "Start syncing folder to the ipfs network.")
 
-	err := p.Parse(os.Args)
-	if err != nil {
-		fmt.Println(p.Usage(err))
-		os.Exit(0)
+	if err := p.Parse(os.Args); err != nil {
+		log.Fatal(p.Usage(err))
 	}
 
-	// init leveldb
 	db.InitDb()
 	defer db.CloseDb()
 
-	// System close handling
-	close := make(chan os.Signal, 2)
-	signal.Notify(close, os.Interrupt, syscall.SIGTERM)
-	go func() {
-		<-close
-		sys.Alert("Stopping file sync!")
-		db.CloseDb()
-		// Need to also close watcher
-		os.Exit(0)
-	}()
-
-	// Call usr command
-	switch true {
+	switch {
 	case initCmd.Happened():
 		err := fs.NewConfig(*root, *nodeAddr, *password)
 		if err != nil {
-			fmt.Println(p.Usage(err))
-			os.Exit(0)
+			log.Fatal(p.Usage(err))
 		}
 		fmt.Println("Configured! Run the following command to start syncing: orbit-drive sync")
 	case syncCmd.Happened():
 		c, err := fs.LoadConfig()
 		if err != nil {
-			fmt.Println(p.Usage(err))
-			os.Exit(0)
+			log.Fatal(p.Usage(err))
 		}
 		fs.Run(c)
 	default:

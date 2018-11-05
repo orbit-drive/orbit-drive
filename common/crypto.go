@@ -6,12 +6,18 @@ import (
 	"encoding/hex"
 	"io"
 	"os"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // String parsing helpers
 func HashStr(p string) []byte {
 	hash := sha256.Sum256(ToByte(p))
 	return hash[:]
+}
+
+func PasswordHash(p string) ([]byte, error) {
+	return bcrypt.GenerateFromPassword(ToByte(p), bcrypt.DefaultCost)
 }
 
 // Md5Checksum calculates the md5 checksum of a file

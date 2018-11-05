@@ -9,7 +9,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/db"
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
@@ -26,6 +25,9 @@ type Watcher struct {
 
 	// Notifier holds the fs watcher
 	Notifier *fsnotify.Watcher
+
+	// State channel
+	State chan vtree.State
 }
 
 // NewWatcher initialize a new Watcher.
@@ -115,10 +117,9 @@ func chmodHandler(w *Watcher, p string) {
 
 func createHandler(w *Watcher, p string) {
 	log.Println("Create", p)
-	err := vtree.Add(p)
-	if err != nil {
-		log.Println(err)
-		return
+	w.State <- vtree.State{
+		Path: p,
+		Op:   "Create",
 	}
 	if isDir, _ := common.IsDir(p); isDir {
 		w.AddToWatchList(p)
@@ -138,17 +139,10 @@ func removeHandler(w *Watcher, p string) {
 
 func writeHandler(w *Watcher, p string) {
 	log.Println("Write", p)
-	vn, err := vtree.Find(p)
-	if err != nil {
-		log.Println(err)
-		return
+	w.State <- vtree.State{
+		Path: p,
+		Op:   "Write",
 	}
-	source := db.NewSource(p)
-	if vn.Source.IsSame(source) {
-		return
-	}
-	vn.Source = source
-	vn.SaveSource()
 }
 
 // populateWatchlist is a recursive func that traverse all nested
