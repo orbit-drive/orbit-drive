@@ -108,7 +108,6 @@ func (w *Watcher) Start() {
 		case err := <-w.Notifier.Errors:
 			log.Println(err)
 		case <-w.Done:
-			log.Println("Ipfsync stopped.")
 			return
 		}
 	}

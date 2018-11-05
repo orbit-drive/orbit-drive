@@ -1,10 +1,10 @@
 package api
 
 import (
-	"log"
 	"os"
 
 	shell "github.com/ipfs/go-ipfs-api"
+	"github.com/wlwanpan/orbit-drive/fs/sys"
 )
 
 var (
@@ -27,12 +27,12 @@ func UploadFile(p string) (string, error) {
 	}
 	defer file.Close()
 
-	log.Println("Uploading file: ", p)
+	sys.Notify("Uploading: ", file.Name())
 	cid, err := Shell.Add(file)
 	if err != nil {
 		return "", err
 	}
 
-	log.Println("Uploaded file: ", cid)
+	sys.Notify("Uploaded: ", cid)
 	return cid, nil
 }
