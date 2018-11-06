@@ -11,16 +11,17 @@ import (
 
 // Source represents the meta data of a file stored locally.
 type Source struct {
-	// ipfs hash
-	Src string `json:src`
+	// Src represents the ipfs hash of the file.
+	Src string `json:"src"`
 
-	// file size
-	Size int64 `json:size`
+	// Size represents the size of the file.
+	Size int64 `json:"size"`
 
-	// file md5 checksum
-	Checksum string `json:checksum`
+	// Checksum represents the md5 checksum hash of file.
+	Checksum string `json:"checksum"`
 }
 
+// Sources represents the store of the locally saved files.
 type Sources map[string]*Source
 
 func NewSource(path string) *Source {
@@ -113,7 +114,7 @@ func (s Sources) ExtractSource(k string) *Source {
 // Dump batch deletes all the entries in the mapping.
 func (s Sources) Dump() error {
 	b := new(leveldb.Batch)
-	for k, _ := range s {
+	for k := range s {
 		b.Delete(common.ToByte(k))
 	}
 	return Db.Write(b, nil)

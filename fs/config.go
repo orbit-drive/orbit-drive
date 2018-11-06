@@ -55,6 +55,7 @@ func LoadConfig() (*Config, error) {
 	return c, nil
 }
 
+// Update overwrites the config hub and ipfs address if a non zero value is provided.
 func (c *Config) Update(n string, h string) {
 	if n != "" {
 		c.NodeAddr = n

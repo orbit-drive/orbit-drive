@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package pb;
+
+message FSNode {
+    bytes Id = 1;
+    string Path = 2;
+    enum Type {
+        FILE = 0;
+        DIR = 1;
+    }
+    repeated FSNode Links = 4;
+    string Source = 5;
+}
+
+message FSTree {
+    string Owner = 0;
+    FSNode Head = 1;
+}

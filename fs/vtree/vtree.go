@@ -9,8 +9,11 @@ import (
 )
 
 const (
+	// CreateOp represents the create operation
 	CreateOp = iota
-	WriteOp  = iota
+	// WriteOp represents the create operation
+	WriteOp = iota
+	// RemoveOp represents the remove operation
 	RemoveOp = iota
 )
 
@@ -20,9 +23,10 @@ type State struct {
 	Op   int64
 }
 
+// VTree represents the file tree structure
 type VTree struct {
 	sync.Mutex
-	// VTree is the root pointer to the virtual tree of the file
+	// Head is the root pointer to the virtual tree of the file
 	// structure being synchronized.
 	Head *VNode
 
@@ -30,12 +34,12 @@ type VTree struct {
 	state chan State
 }
 
-// InitVTree initialize a new virtual tree (VTree) given an absolute path.
+// NewVTree initialize a new virtual tree (VTree) given an absolute path.
 func NewVTree(path string, s db.Sources) (*VTree, error) {
 	vt := &VTree{
 		Head: &VNode{
 			Path:   path,
-			Id:     common.ToByte(common.ROOT_KEY),
+			ID:     common.ToByte(common.ROOT_KEY),
 			Type:   DirCode,
 			Links:  []*VNode{},
 			Source: &db.Source{},
@@ -50,18 +54,24 @@ func NewVTree(path string, s db.Sources) (*VTree, error) {
 	return vt, nil
 }
 
+// StateChanges returns the state channel of the VTree.
 func (vt *VTree) StateChanges() <-chan State {
 	return vt.state
 }
 
+// PushToState generates and sends a State struct to the state channel.
 func (vt *VTree) PushToState(p string, op int64) {
 	vt.state <- State{Path: p, Op: op}
 }
 
+// PopulateNodes recursively populates the file tree structure
+// starting from the head.
 func (vt *VTree) PopulateNodes(s db.Sources) error {
 	return vt.Head.PopulateNodes(s)
 }
 
+// Find recursively traverse down the tree structure from the
+// root head and returns the vnode corresponding the path.
 func (vt *VTree) Find(path string) (*VNode, error) {
 	return vt.Head.FindChildAt(path)
 }
@@ -92,7 +102,7 @@ func (vt *VTree) Add(path string) error {
 	return nil
 }
 
-// DeleteFile -> UnlinkChild -> remove from db
+// Remove -> UnlinkChild -> remove from db
 func (vt *VTree) Remove(path string) error {
 	return nil
 }

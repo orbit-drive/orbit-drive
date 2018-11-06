@@ -14,6 +14,7 @@ import (
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
+// Callback is an interface for traversePath callback function.
 type Callback func(string)
 
 // Watcher is a wrapper to fsnotify watcher and represents
@@ -159,11 +160,11 @@ func traversePath(p string, cb Callback) {
 			continue
 		}
 		wg.Add(1)
-		go func() {
-			filepath := path.Join(p, f.Name())
+		go func(filename string) {
+			filepath := path.Join(p, filename)
 			traversePath(filepath, cb)
 			wg.Done()
-		}()
+		}(f.Name())
 	}
 
 	wg.Wait()

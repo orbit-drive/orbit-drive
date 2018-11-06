@@ -12,6 +12,11 @@ import (
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
+// Run is the main entry point for orbit drive sync mode by:
+// (i) generating a virtual tree representation of the syncing folder.
+// (ii) starts the backend hub for device synchronization.
+// (iii) starts the watcher for file changes in the syncing folder.
+// (iv) relaying all local changes to backend hub.
 func Run(c *Config) {
 	sys.Notify("Starting file sync!")
 	defer sys.Alert("Stopping file sync!")

@@ -8,24 +8,30 @@ import (
 )
 
 const (
-	NOTIFIER_TITLE = "Orbit Drive"
-	APP_ICON       = ""
+	notifierTitle = "Orbit Drive"
+	appIcon       = ""
 )
 
+// Notify sends a notification message to the system foreground
+// and logs the message to console.
 func Notify(m ...string) {
 	msg := strings.Join(m, "")
+	beeep.Notify(notifierTitle, msg, appIcon)
 	log.Println(msg)
-	beeep.Notify(NOTIFIER_TITLE, msg, APP_ICON)
 }
 
+// Alert sends an alert notification to the system foreground
+// and logs the alert message.
 func Alert(m ...string) {
 	msg := strings.Join(m, "")
+	beeep.Alert(notifierTitle, msg, appIcon)
 	log.Println(msg)
-	beeep.Alert(NOTIFIER_TITLE, msg, APP_ICON)
 }
 
+// Fatal sends an alert notification to the system foreground,
+// logs the alert message and system os exits.
 func Fatal(m ...string) {
 	msg := strings.Join(m, "")
+	beeep.Alert(notifierTitle, msg, appIcon)
 	log.Fatalln(msg)
-	beeep.Alert(NOTIFIER_TITLE, msg, APP_ICON)
 }

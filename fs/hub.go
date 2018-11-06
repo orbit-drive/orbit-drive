@@ -10,11 +10,16 @@ import (
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
+// Hub represents a interface for the backend hub service.
 type Hub struct {
+	// HostAddr is the address of the backend hub service.
 	HostAddr string
-	conn     *websocket.Conn
+
+	// conn holds the websocket connection.
+	conn *websocket.Conn
 }
 
+// NewHub creates and start a websocket connection to backend hub.
 func NewHub(addr string) (*Hub, error) {
 	hub := &Hub{HostAddr: addr}
 	if err := hub.Connect(); err != nil {
@@ -23,6 +28,8 @@ func NewHub(addr string) (*Hub, error) {
 	return hub, nil
 }
 
+// Connect dial the backend hub and establish a websocket connection
+// and stores the connection to the hub conn.
 func (h *Hub) Connect() error {
 	u := url.URL{
 		Scheme: "ws",
@@ -37,6 +44,8 @@ func (h *Hub) Connect() error {
 	return nil
 }
 
+// Sync listens to incoming traffics from the backend hub and
+// call the appropriate handler to mutate the vtree.
 func (h *Hub) Sync(vt *vtree.VTree) {
 	for {
 		_, message, err := h.conn.ReadMessage()
@@ -47,6 +56,7 @@ func (h *Hub) Sync(vt *vtree.VTree) {
 	}
 }
 
+// Stop closes the hub websocket connection to the backend hub.
 func (h *Hub) Stop() {
 	h.conn.Close()
 }
