@@ -22,49 +22,30 @@ func Run(c *Config) {
 		sys.Fatal(err.Error())
 	}
 
-	if err = vtree.InitVTree(c.Root, sources); err != nil {
+	vt, err := vtree.NewVTree(c.Root, sources)
+	if err != nil {
 		sources.Dump()
 	}
 
-	hub := NewHub()
-	go hub.Start()
-	defer hub.Stop()
+	hub, err := NewHub("localhost:4000") // To move to env
+	if err != nil {
+		sys.Alert(err.Error())
+	} else {
+		go hub.Sync(vt)
+		defer hub.Stop()
+	}
 
 	watcher := NewWatcher(c.Root)
-	go watcher.Start()
+	go watcher.Start(vt)
 	defer watcher.Stop()
 
-	error := make(chan error)
 	close := make(chan os.Signal, 2)
 	signal.Notify(close, os.Interrupt, syscall.SIGTERM)
 
 	for {
 		select {
-		case hs := <-hub.State:
-			log.Println(hs.Path + hs.Op)
-		case ws := <-watcher.State:
-			log.Println(ws.Path + ws.Op)
-			switch ws.Op {
-			case "Create":
-				error <- vtree.Add(ws.Path)
-			case "Write":
-				vn, err := vtree.Find(ws.Path)
-				if err != nil {
-					error <- err
-					continue
-				}
-				source := db.NewSource(ws.Path)
-				if vn.Source.IsSame(source) {
-					continue
-				}
-				vn.Source = source
-				vn.SaveSource()
-			default:
-			}
-		case err := <-error:
-			if err != nil {
-				sys.Alert(err.Error())
-			}
+		case state := <-vt.StateChanges():
+			log.Println(state.Path)
 		case <-close:
 			return
 		}

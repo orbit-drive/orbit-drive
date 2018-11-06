@@ -19,7 +19,7 @@ func main() {
 		Required: false,
 		Help:     "Root path of folder to synchronise.",
 	})
-	nodeAddr := initCmd.String("n", "node", &argparse.Options{
+	nodeAddr := initCmd.String("n", "node-addr", &argparse.Options{
 		Required: false,
 		Default:  "https://ipfs.infura.io:5001",
 		Help:     "Ipfs node address, will default to an infura node if none is provided.",
@@ -31,6 +31,11 @@ func main() {
 
 	// sync command
 	syncCmd := p.NewCommand("sync", "Start syncing folder to the ipfs network.")
+	hubAddr := syncCmd.String("b", "hub-addr", &argparse.Options{
+		Required: false,
+		Default:  "",
+		Help:     "Hub address for device synchronization.",
+	})
 
 	if err := p.Parse(os.Args); err != nil {
 		log.Fatal(p.Usage(err))
@@ -51,6 +56,7 @@ func main() {
 		if err != nil {
 			log.Fatal(p.Usage(err))
 		}
+		c.Update("", *hubAddr)
 		fs.Run(c)
 	default:
 		os.Exit(0)

@@ -9,6 +9,8 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/wlwanpan/orbit-drive/fs/sys"
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
@@ -25,9 +27,6 @@ type Watcher struct {
 
 	// Notifier holds the fs watcher
 	Notifier *fsnotify.Watcher
-
-	// State channel
-	State chan vtree.State
 }
 
 // NewWatcher initialize a new Watcher.
@@ -74,9 +73,8 @@ func (w *Watcher) RemoveFromWatchList(p string) {
 
 // Start initialize watcher notifier and check for the notifier
 // Event channel and Errors channel.
-func (w *Watcher) Start() {
+func (w *Watcher) Start(vt *vtree.VTree) {
 	w.InitNotifier()
-
 	for {
 		select {
 		case e := <-w.Notifier.Events:
@@ -84,21 +82,19 @@ func (w *Watcher) Start() {
 				continue
 			}
 			switch e.Op {
-			case fsnotify.Chmod:
-				chmodHandler(w, e.Name)
 			case fsnotify.Create:
-				createHandler(w, e.Name)
-			case fsnotify.Rename:
-				renameHandler(w, e.Name)
-			case fsnotify.Remove:
-				removeHandler(w, e.Name)
+				createHandler(w, vt, e.Name)
 			case fsnotify.Write:
-				writeHandler(w, e.Name)
+				writeHandler(w, vt, e.Name)
+			case fsnotify.Remove:
+				removeHandler(w, vt, e.Name)
 			default:
+				// fsnotify.Chmod, fsnotify.Rename
+				log.Println(e.String())
 				continue
 			}
 		case err := <-w.Notifier.Errors:
-			log.Println(err)
+			sys.Alert(err.Error())
 		case <-w.Done:
 			return
 		}
@@ -111,38 +107,40 @@ func (w *Watcher) Stop() {
 	w.Done <- true
 }
 
-func chmodHandler(w *Watcher, p string) {
-	log.Println("Write", p)
-}
-
-func createHandler(w *Watcher, p string) {
+func createHandler(w *Watcher, vt *vtree.VTree, p string) {
 	log.Println("Create", p)
-	w.State <- vtree.State{
-		Path: p,
-		Op:   "Create",
+	if err := vt.Add(p); err != nil {
+		sys.Alert(err.Error())
+		return
 	}
 	if isDir, _ := common.IsDir(p); isDir {
 		w.AddToWatchList(p)
 	}
+	vt.PushToState(p, vtree.CreateOp)
 }
 
-func renameHandler(w *Watcher, p string) {
-	log.Println("Rename", p)
+func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
+	log.Println("Write", p)
+	vn, err := vt.Find(p)
+	if err != nil {
+		sys.Alert(err.Error())
+		return
+	}
+	source := db.NewSource(p)
+	if vn.Source.IsSame(source) {
+		return
+	}
+	vn.Source = source
+	vn.SaveSource()
+	vt.PushToState(p, vtree.WriteOp)
 }
 
-func removeHandler(w *Watcher, p string) {
+func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	log.Println("Remove", p)
 	if isDir, _ := common.IsDir(p); isDir {
 		w.RemoveFromWatchList(p)
 	}
-}
-
-func writeHandler(w *Watcher, p string) {
-	log.Println("Write", p)
-	w.State <- vtree.State{
-		Path: p,
-		Op:   "Write",
-	}
+	vt.PushToState(p, vtree.RemoveOp)
 }
 
 // populateWatchlist is a recursive func that traverse all nested

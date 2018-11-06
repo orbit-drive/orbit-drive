@@ -8,48 +8,71 @@ import (
 	"github.com/wlwanpan/orbit-drive/fs/db"
 )
 
+const (
+	CreateOp = iota
+	WriteOp  = iota
+	RemoveOp = iota
+)
+
 // State represents a vtree state change.
 type State struct {
 	Path string
-	Op   string
+	Op   int64
 }
 
-var VTree struct {
+type VTree struct {
 	sync.Mutex
 	// VTree is the root pointer to the virtual tree of the file
 	// structure being synchronized.
 	Head *VNode
+
+	// State channel
+	state chan State
 }
 
 // InitVTree initialize a new virtual tree (VTree) given an absolute path.
-func InitVTree(path string, s db.Sources) error {
-	VTree.Head = &VNode{
-		Path:   path, // To optimize here -> start with "/" not abs path
-		Id:     common.ToByte(common.ROOT_KEY),
-		Type:   DirCode,
-		Links:  []*VNode{},
-		Source: &db.Source{},
+func NewVTree(path string, s db.Sources) (*VTree, error) {
+	vt := &VTree{
+		Head: &VNode{
+			Path:   path,
+			Id:     common.ToByte(common.ROOT_KEY),
+			Type:   DirCode,
+			Links:  []*VNode{},
+			Source: &db.Source{},
+		},
+		state: make(chan State),
 	}
 
-	err := PopulateNodes(s)
+	err := vt.PopulateNodes(s)
 	if err != nil {
-		return err
+		return &VTree{}, nil
 	}
-	return nil
+	return vt, nil
 }
 
-func PopulateNodes(s db.Sources) error {
-	return VTree.Head.PopulateNodes(s)
+func (vt *VTree) StateChanges() <-chan State {
+	return vt.state
 }
 
-func Find(path string) (*VNode, error) {
-	return VTree.Head.FindChildAt(path)
+func (vt *VTree) PushToState(p string, op int64) {
+	vt.state <- State{Path: p, Op: op}
 }
 
-// NewFile traverse VTree to locate path parent dir and add a new vnode.
-func Add(path string) error {
+func (vt *VTree) PopulateNodes(s db.Sources) error {
+	return vt.Head.PopulateNodes(s)
+}
+
+func (vt *VTree) Find(path string) (*VNode, error) {
+	return vt.Head.FindChildAt(path)
+}
+
+// Add traverse VTree to locate path parent dir and add a new vnode.
+func (vt *VTree) Add(path string) error {
+	vt.Lock()
+	defer vt.Unlock()
+
 	dir := filepath.Dir(path)
-	vn, err := VTree.Head.FindChildAt(dir)
+	vn, err := vt.Head.FindChildAt(dir)
 	if err != nil {
 		return err
 	}
@@ -70,6 +93,6 @@ func Add(path string) error {
 }
 
 // DeleteFile -> UnlinkChild -> remove from db
-func Remove(path string) error {
+func (vt *VTree) Remove(path string) error {
 	return nil
 }

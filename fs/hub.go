@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"log"
 	"net/url"
 
 	"github.com/gorilla/websocket"
@@ -10,47 +11,44 @@ import (
 )
 
 type Hub struct {
-	conn *websocket.Conn
-
-	State chan vtree.State
+	HostAddr string
+	conn     *websocket.Conn
 }
 
-func NewHub() *Hub {
-	return &Hub{
-		State: make(chan vtree.State),
+func NewHub(addr string) (*Hub, error) {
+	hub := &Hub{HostAddr: addr}
+	if err := hub.Connect(); err != nil {
+		return &Hub{}, nil
 	}
+	return hub, nil
 }
 
-func (h *Hub) connect() {
+func (h *Hub) Connect() error {
 	u := url.URL{
 		Scheme: "ws",
-		Host:   "localhost:4000",
+		Host:   h.HostAddr,
 		Path:   "/account/subscribe",
 	}
 	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
 	if err != nil {
-		sys.Notify(err.Error())
+		return err
 	}
 	h.conn = conn
+	return nil
 }
 
-func (h *Hub) Start() {
-	h.connect()
+func (h *Hub) Sync(vt *vtree.VTree) {
 	for {
 		_, message, err := h.conn.ReadMessage()
 		if err != nil {
 			sys.Alert(err.Error())
 		}
-		h.State <- vtree.State{
-			Path: common.ToStr(message),
-			Op:   "Update",
-		}
+		log.Println(common.ToStr(message))
 	}
 }
 
 func (h *Hub) Stop() {
 	h.conn.Close()
-	close(h.State)
 }
 
 // Push send a msg to websocket connection

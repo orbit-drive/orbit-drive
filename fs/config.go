@@ -12,8 +12,11 @@ type Config struct {
 	// Root is the absolute path of the directory to synchronize.
 	Root string `json:"root_path"`
 
-	// Node is address of the ipfs node for the api request. (Default: infura)
+	// NodeAddr is address of the ipfs node for the api request. (Default: infura)
 	NodeAddr string `json:"node_addr"`
+
+	// HubAddr is the address of the backend service for device sync.
+	HubAddr string `json:"hub_addr"`
 
 	// Password is the usr password set used for file encryption.
 	Password string `json:"password_hash"`
@@ -50,6 +53,15 @@ func LoadConfig() (*Config, error) {
 		return &Config{}, err
 	}
 	return c, nil
+}
+
+func (c *Config) Update(n string, h string) {
+	if n != "" {
+		c.NodeAddr = n
+	}
+	if h != "" {
+		c.HubAddr = h
+	}
 }
 
 // Save persist the current configuration.
