@@ -13,6 +13,7 @@ import (
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/fs/api"
 	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/wlwanpan/orbit-drive/pb"
 )
 
 const (
@@ -188,4 +189,9 @@ func (vn *VNode) traverse(steps []string) (*VNode, error) {
 		vn = link
 	}
 	return vn, nil
+}
+
+// ToProto parse a vtree to protobuf.
+func (vn *VNode) ToProto() *pb.FSNode {
+	return &pb.FSNode{}
 }

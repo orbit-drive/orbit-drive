@@ -24,6 +24,8 @@ type Source struct {
 // Sources represents the store of the locally saved files.
 type Sources map[string]*Source
 
+// NewSource generates a new source instance froma given path
+// and validates the path, computes the file checksum and size.
 func NewSource(path string) *Source {
 	fi, err := os.Stat(path)
 	if err != nil || fi.IsDir() {
@@ -41,15 +43,18 @@ func NewSource(path string) *Source {
 	}
 }
 
+// SetSrc is a setter for Source src.
 func (s *Source) SetSrc(src string) {
 	s.Src = src
 }
 
+// GetSrc is a getter for Source src.
 func (s Source) GetSrc() string {
 	return s.Src
 }
 
-func (s *Source) Copy() *Source {
+// DeepCopy deep copies a source instance and return a new instance.
+func (s *Source) DeepCopy() *Source {
 	return &Source{
 		Src:      s.GetSrc(),
 		Size:     s.Size,
@@ -57,10 +62,12 @@ func (s *Source) Copy() *Source {
 	}
 }
 
+// IsUploaded check is the Source src is a non zero value.
 func (s *Source) IsUploaded() bool {
 	return s.GetSrc() != ""
 }
 
+// Save write the Source instance to the db.
 func (s *Source) Save(k []byte) error {
 	data, err := json.Marshal(s)
 	if err != nil {
@@ -106,7 +113,7 @@ func (s Sources) ExtractSource(k string) *Source {
 	source, exist := s[k]
 	if exist {
 		defer delete(s, k)
-		return source.Copy()
+		return source.DeepCopy()
 	}
 	return &Source{}
 }

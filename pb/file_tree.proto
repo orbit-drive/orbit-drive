@@ -14,6 +14,6 @@ message FSNode {
 }
 
 message FSTree {
-    string Owner = 0;
-    FSNode Head = 1;
+    string Owner = 1;
+    FSNode Head = 2;
 }

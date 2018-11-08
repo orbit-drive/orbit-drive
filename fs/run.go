@@ -12,6 +12,20 @@ import (
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
 
+func loadAndInitVTree(root string) (*vtree.VTree, error) {
+	sources, err := db.GetSources()
+	if err != nil {
+		return &vtree.VTree{}, err
+	}
+
+	vt, err := vtree.NewVTree(root, sources)
+	if err != nil {
+		return &vtree.VTree{}, err
+	}
+	sources.Dump()
+	return vt, nil
+}
+
 // Run is the main entry point for orbit drive sync mode by:
 // (i) generating a virtual tree representation of the syncing folder.
 // (ii) starts the backend hub for device synchronization.
@@ -22,17 +36,12 @@ func Run(c *Config) {
 	defer sys.Alert("Stopping file sync!")
 	api.InitShell(c.NodeAddr)
 
-	sources, err := db.GetSources()
+	vt, err := loadAndInitVTree(c.Root)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
 
-	vt, err := vtree.NewVTree(c.Root, sources)
-	if err != nil {
-		sources.Dump()
-	}
-
-	hub, err := NewHub("localhost:4000") // To move to env
+	hub, err := NewHub(c.HubAddr)
 	if err != nil {
 		sys.Alert(err.Error())
 	} else {

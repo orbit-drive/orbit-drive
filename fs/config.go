@@ -23,12 +23,12 @@ type Config struct {
 }
 
 // NewConfig initialize a new usr config and save it.
-func NewConfig(root, nodeAddr, p string) error {
+func NewConfig(root, nodeAddr, hubAddr, path string) error {
 	if root == "" {
 		root = common.GetCurrentDir()
 	}
 
-	hash, err := common.PasswordHash(p)
+	hash, err := common.PasswordHash(path)
 	if err != nil {
 		return err
 	}
@@ -36,6 +36,7 @@ func NewConfig(root, nodeAddr, p string) error {
 	c := &Config{
 		Root:     root,
 		NodeAddr: nodeAddr,
+		HubAddr:  hubAddr,
 		Password: common.ToStr(hash),
 	}
 	return c.Save()

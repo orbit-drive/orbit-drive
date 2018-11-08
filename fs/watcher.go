@@ -117,7 +117,6 @@ func createHandler(w *Watcher, vt *vtree.VTree, p string) {
 	if isDir, _ := common.IsDir(p); isDir {
 		w.AddToWatchList(p)
 	}
-	vt.PushToState(p, vtree.CreateOp)
 }
 
 func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
@@ -133,7 +132,6 @@ func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	}
 	vn.Source = source
 	vn.SaveSource()
-	vt.PushToState(p, vtree.WriteOp)
 }
 
 func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
@@ -141,7 +139,6 @@ func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	if isDir, _ := common.IsDir(p); isDir {
 		w.RemoveFromWatchList(p)
 	}
-	vt.PushToState(p, vtree.RemoveOp)
 }
 
 // populateWatchlist is a recursive func that traverse all nested

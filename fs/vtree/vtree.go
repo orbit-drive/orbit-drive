@@ -6,15 +6,16 @@ import (
 
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/wlwanpan/orbit-drive/pb"
 )
 
 const (
-	// CreateOp represents the create operation
-	CreateOp = iota
-	// WriteOp represents the create operation
-	WriteOp = iota
-	// RemoveOp represents the remove operation
-	RemoveOp = iota
+	// AddedOp represents the create operation
+	AddedOp = iota
+	// ModifiedOp represents the create operation
+	ModifiedOp = iota
+	// RemovedOp represents the remove operation
+	RemovedOp = iota
 )
 
 // State represents a vtree state change.
@@ -26,8 +27,7 @@ type State struct {
 // VTree represents the file tree structure
 type VTree struct {
 	sync.Mutex
-	// Head is the root pointer to the virtual tree of the file
-	// structure being synchronized.
+	// Head is the root pointer to the virtual tree of the file structure being synchronized.
 	Head *VNode
 
 	// State channel
@@ -82,7 +82,7 @@ func (vt *VTree) Add(path string) error {
 	defer vt.Unlock()
 
 	dir := filepath.Dir(path)
-	vn, err := vt.Head.FindChildAt(dir)
+	vn, err := vt.Find(dir)
 	if err != nil {
 		return err
 	}
@@ -99,10 +99,17 @@ func (vt *VTree) Add(path string) error {
 		n.SetAsFile()
 		n.SaveSource()
 	}
+	vt.PushToState(path, AddedOp)
 	return nil
 }
 
 // Remove -> UnlinkChild -> remove from db
 func (vt *VTree) Remove(path string) error {
+	vt.PushToState(path, RemovedOp)
 	return nil
+}
+
+// ToProto parse a vtree to protobuf.
+func (vt *VTree) ToProto() *pb.FSTree {
+	return &pb.FSTree{}
 }
