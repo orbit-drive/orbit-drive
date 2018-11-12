@@ -1,10 +1,7 @@
 package fs
 
 import (
-	"io/ioutil"
 	"log"
-	"path"
-	"sync"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/wlwanpan/orbit-drive/common"
@@ -12,9 +9,6 @@ import (
 	"github.com/wlwanpan/orbit-drive/fs/sys"
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
 )
-
-// Callback is an interface for traversePath callback function.
-type Callback func(string)
 
 // Watcher is a wrapper to fsnotify watcher and represents
 // a path to watch for usr changes.
@@ -128,32 +122,4 @@ func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	if isDir, _ := common.IsDir(p); isDir {
 		w.RemoveFromWatchList(p) // TODO: Figure out how to get all dir paths removed from vt.Remove
 	}
-}
-
-// traversePath is a recursive func that traverse all nested
-// dir of the given path and adds them to the fsnotify watch list.
-// TODO: switch callback to channel (https://github.com/orbit-drive/orbit-drive/pull/3).
-func traversePath(p string, cb Callback) {
-	var wg sync.WaitGroup
-
-	files, err := ioutil.ReadDir(p)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	for _, f := range files {
-		if !f.IsDir() {
-			continue
-		}
-		wg.Add(1)
-		go func(filename string) {
-			filepath := path.Join(p, filename)
-			traversePath(filepath, cb)
-			wg.Done()
-		}(f.Name())
-	}
-
-	wg.Wait()
-	cb(p)
 }
