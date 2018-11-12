@@ -88,7 +88,7 @@ func GetSources() (Sources, error) {
 	for iter.Next() {
 		k := common.ToStr(iter.Key())
 		switch k {
-		case common.ROOT_KEY, common.CONFIG_KEY:
+		case common.ROOTKEY, common.CONFIGKEY:
 		default:
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)

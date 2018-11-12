@@ -4,10 +4,12 @@ import (
 	"log"
 	"net/url"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/wlwanpan/orbit-drive/common"
 	"github.com/wlwanpan/orbit-drive/fs/sys"
 	"github.com/wlwanpan/orbit-drive/fs/vtree"
+	"github.com/wlwanpan/orbit-drive/pb"
 )
 
 // Hub represents a interface for the backend hub service.
@@ -17,6 +19,9 @@ type Hub struct {
 
 	// conn holds the websocket connection.
 	conn *websocket.Conn
+
+	// updates
+	updates chan []byte
 }
 
 // NewHub creates and start a websocket connection to backend hub.
@@ -48,20 +53,41 @@ func (h *Hub) Connect() error {
 // call the appropriate handler to mutate the vtree.
 func (h *Hub) Sync(vt *vtree.VTree) {
 	for {
-		_, message, err := h.conn.ReadMessage()
+		_, msg, err := h.conn.ReadMessage()
 		if err != nil {
 			sys.Alert(err.Error())
 		}
-		log.Println(common.ToStr(message))
+		log.Println(common.ToStr(msg))
+		h.updates <- msg
 	}
+}
+
+// Updates returns a parsed channel, parsing ws bytes to proto hub message.
+func (h *Hub) Updates() (<-chan pb.HubMsg, error) {
+	updates := make(chan pb.HubMsg)
+	go func() {
+		update := <-h.updates
+		hubMsg := &pb.HubMsg{}
+		err := proto.Unmarshal(update, hubMsg)
+		if err != nil {
+
+		}
+		updates <- *hubMsg
+	}()
+	return updates, nil
 }
 
 // Stop closes the hub websocket connection to the backend hub.
 func (h *Hub) Stop() {
-	h.conn.Close()
+	defer h.conn.Close()
+	closeMsg := websocket.FormatCloseMessage(websocket.CloseNormalClosure, "")
+	err := h.conn.WriteMessage(websocket.CloseMessage, closeMsg)
+	if err != nil {
+		sys.Alert(err.Error())
+	}
 }
 
 // Push send a msg to websocket connection
 func (h *Hub) Push(msg []byte) error {
-	return nil
+	return h.conn.WriteMessage(websocket.TextMessage, msg)
 }

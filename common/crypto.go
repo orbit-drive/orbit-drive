@@ -10,12 +10,13 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// String parsing helpers
+// HashStr parsing helpers
 func HashStr(p string) []byte {
 	hash := sha256.Sum256(ToByte(p))
 	return hash[:]
 }
 
+// PasswordHash
 func PasswordHash(p string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword(ToByte(p), bcrypt.DefaultCost)
 }

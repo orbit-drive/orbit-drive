@@ -66,6 +66,11 @@ func (vn *VNode) SetAsDir() {
 	vn.Type = DirCode
 }
 
+// IsDir returns true of vnode is of type dircode.
+func (vn *VNode) IsDir() bool {
+	return vn.Type == DirCode
+}
+
 // SetAsFile sets the vnode type to a file.
 func (vn *VNode) SetAsFile() {
 	vn.Type = FileCode
@@ -90,6 +95,15 @@ func (vn *VNode) SaveSource() error {
 	return vn.Source.Save(vn.ID)
 }
 
+// UpdateSource validates and updates source if given source file differ from current source.
+func (vn *VNode) UpdateSource(source *db.Source) error {
+	if vn.Source.IsSame(source) {
+		return nil
+	}
+	vn.Source = source
+	return vn.SaveSource()
+}
+
 // GenChildID returns a hash from the current vnode id and the given path.
 func (vn *VNode) GenChildID(p string) []byte {
 	i := append(vn.ID, p...)
@@ -110,7 +124,7 @@ func (vn *VNode) NewVNode(path string) *VNode {
 }
 
 // PopulateNodes read a path and populate the its links given
-// the path is a directory else creates a file node.
+// the path is a directory else creates a file node.RemoveFromWatchList
 func (vn *VNode) PopulateNodes(s db.Sources) error {
 	files, err := ioutil.ReadDir(vn.Path)
 	if err != nil {
@@ -193,5 +207,41 @@ func (vn *VNode) traverse(steps []string) (*VNode, error) {
 
 // ToProto parse a vtree to protobuf.
 func (vn *VNode) ToProto() *pb.FSNode {
-	return &pb.FSNode{}
+	var wg sync.WaitGroup
+	pbNode := &pb.FSNode{
+		ID:     vn.ID,
+		Path:   vn.Path,
+		Source: vn.Source.Src,
+		Links:  []*pb.FSNode{},
+	}
+
+	for _, vnode := range vn.Links {
+		wg.Add(1)
+		go func(vnode *VNode) {
+			pbNode.Links = append(pbNode.Links, vnode.ToProto())
+			wg.Done()
+		}(vnode)
+	}
+	wg.Wait()
+	return pbNode
+}
+
+// AllDirPaths traverse the vnode links and returns a slice of all the child dirpath.
+func (vn *VNode) AllDirPaths() []string {
+	log.Println(vn.Type)
+	if !vn.IsDir() {
+		return []string{}
+	}
+	var wg sync.WaitGroup
+	dirPaths := []string{vn.Path}
+	for _, vnode := range vn.Links {
+		wg.Add(1)
+		go func(vnode *VNode) {
+			paths := vnode.AllDirPaths()
+			dirPaths = append(dirPaths, paths...)
+			wg.Done()
+		}(vnode)
+	}
+	wg.Wait()
+	return dirPaths
 }

@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"path"
@@ -32,50 +31,44 @@ type Watcher struct {
 
 // NewWatcher initialize a new Watcher.
 func NewWatcher(p string) *Watcher {
-	return &Watcher{
-		Done: make(chan bool),
-		Path: p,
-	}
-}
-
-// InitNotifier initialize the wrapped fs watcher and populate its watch list.
-func (w *Watcher) InitNotifier() {
 	n, err := fsnotify.NewWatcher()
 	if err != nil {
-		// To figure out how to deal with error here <<
-		fmt.Println(err)
+		log.Println(err)
 	}
-	w.Notifier = n
+	w := &Watcher{
+		Done:     make(chan bool),
+		Path:     p,
+		Notifier: n,
+	}
 	w.AddToWatchList(w.Path)
+	return w
 }
 
-// AddToWatchList traverse a path and add all nested dir
-// path to the notifier watch list.
+// AddToWatchList adds path to watch.
 func (w *Watcher) AddToWatchList(p string) {
-	cb := func(path string) {
-		if err := w.Notifier.Add(path); err != nil {
-			w.Notifier.Errors <- err
-		}
+	if err := w.Notifier.Add(p); err != nil {
+		log.Println(err)
 	}
-	traversePath(p, cb)
+}
+
+// BatchAdd adds multiple paths to watcher.
+func (w *Watcher) BatchAdd(paths []string) {
+	for _, path := range paths {
+		w.AddToWatchList(path)
+	}
 }
 
 // RemoveFromWatchList traverse a path and remove all nested dir
 // path from the notifier watch list.
 func (w *Watcher) RemoveFromWatchList(p string) {
-	cb := func(path string) {
-		log.Println("Removed from watch list: ", path)
-		if err := w.Notifier.Remove(path); err != nil {
-			w.Notifier.Errors <- err
-		}
+	if err := w.Notifier.Remove(p); err != nil {
+		w.Notifier.Errors <- err
 	}
-	traversePath(p, cb)
 }
 
 // Start initialize watcher notifier and check for the notifier
 // Event channel and Errors channel.
 func (w *Watcher) Start(vt *vtree.VTree) {
-	w.InitNotifier()
 	for {
 		select {
 		case e := <-w.Notifier.Events:
@@ -90,7 +83,6 @@ func (w *Watcher) Start(vt *vtree.VTree) {
 			case fsnotify.Remove:
 				removeHandler(w, vt, e.Name)
 			default:
-				// fsnotify.Chmod, fsnotify.Rename
 				log.Println(e.String())
 				continue
 			}
@@ -115,7 +107,7 @@ func createHandler(w *Watcher, vt *vtree.VTree, p string) {
 		return
 	}
 	if isDir, _ := common.IsDir(p); isDir {
-		w.AddToWatchList(p)
+		w.AddToWatchList(p) // TODO: Figure out how to get all new dir paths from vt.Add
 	}
 }
 
@@ -127,22 +119,20 @@ func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
 		return
 	}
 	source := db.NewSource(p)
-	if vn.Source.IsSame(source) {
-		return
-	}
-	vn.Source = source
-	vn.SaveSource()
+	vn.UpdateSource(source)
 }
 
 func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	log.Println("Remove", p)
+	vt.Remove(p)
 	if isDir, _ := common.IsDir(p); isDir {
-		w.RemoveFromWatchList(p)
+		w.RemoveFromWatchList(p) // TODO: Figure out how to get all dir paths removed from vt.Remove
 	}
 }
 
-// populateWatchlist is a recursive func that traverse all nested
+// traversePath is a recursive func that traverse all nested
 // dir of the given path and adds them to the fsnotify watch list.
+// TODO: switch callback to channel (https://github.com/orbit-drive/orbit-drive/pull/3).
 func traversePath(p string, cb Callback) {
 	var wg sync.WaitGroup
 

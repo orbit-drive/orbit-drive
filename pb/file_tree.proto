@@ -3,7 +3,7 @@ syntax = "proto3";
 package pb;
 
 message FSNode {
-    bytes Id = 1;
+    bytes ID = 1;
     string Path = 2;
     enum Type {
         FILE = 0;

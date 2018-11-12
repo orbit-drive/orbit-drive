@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/wlwanpan/orbit-drive/fs/api"
 	"github.com/wlwanpan/orbit-drive/fs/db"
 	"github.com/wlwanpan/orbit-drive/fs/sys"
@@ -49,7 +50,9 @@ func Run(c *Config) {
 		defer hub.Stop()
 	}
 
+	dirPaths := vt.AllDirPaths()
 	watcher := NewWatcher(c.Root)
+	watcher.BatchAdd(dirPaths)
 	go watcher.Start(vt)
 	defer watcher.Stop()
 
@@ -60,6 +63,12 @@ func Run(c *Config) {
 		select {
 		case state := <-vt.StateChanges():
 			log.Println(state.Path)
+			vtPb := vt.ToProto()
+			parsedPb, err := proto.Marshal(vtPb)
+			if err != nil {
+				sys.Alert(err.Error())
+			}
+			hub.Push(parsedPb)
 		case <-close:
 			return
 		}

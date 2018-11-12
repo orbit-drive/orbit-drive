@@ -44,7 +44,7 @@ func NewConfig(root, nodeAddr, hubAddr, path string) error {
 
 // LoadConfig loads a stored config from: (defaults: ~/.orbit-drive/.config)
 func LoadConfig() (*Config, error) {
-	data, err := db.Get(common.ToByte(common.CONFIG_KEY))
+	data, err := db.Get(common.ToByte(common.CONFIGKEY))
 	if err != nil {
 		return &Config{}, err
 	}
@@ -72,5 +72,5 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	return db.Put(common.ToByte(common.CONFIG_KEY), p)
+	return db.Put(common.ToByte(common.CONFIGKEY), p)
 }

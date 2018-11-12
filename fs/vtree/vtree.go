@@ -39,7 +39,7 @@ func NewVTree(path string, s db.Sources) (*VTree, error) {
 	vt := &VTree{
 		Head: &VNode{
 			Path:   path,
-			ID:     common.ToByte(common.ROOT_KEY),
+			ID:     common.ToByte(common.ROOTKEY),
 			Type:   DirCode,
 			Links:  []*VNode{},
 			Source: &db.Source{},
@@ -111,5 +111,12 @@ func (vt *VTree) Remove(path string) error {
 
 // ToProto parse a vtree to protobuf.
 func (vt *VTree) ToProto() *pb.FSTree {
-	return &pb.FSTree{}
+	return &pb.FSTree{
+		Head: vt.Head.ToProto(),
+	}
+}
+
+// AllDirPaths returns all the dir path in the vtree.
+func (vt *VTree) AllDirPaths() []string {
+	return vt.Head.AllDirPaths()
 }
