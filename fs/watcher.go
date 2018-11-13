@@ -74,7 +74,7 @@ func (w *Watcher) Start(vt *vtree.VTree) {
 				createHandler(w, vt, e.Name)
 			case fsnotify.Write:
 				writeHandler(w, vt, e.Name)
-			case fsnotify.Remove:
+			case fsnotify.Remove: // manually remove from folder triggers fsnotify.Rename
 				removeHandler(w, vt, e.Name)
 			default:
 				log.Println(e.String())

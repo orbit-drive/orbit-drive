@@ -63,18 +63,19 @@ func (h *Hub) Sync(vt *vtree.VTree) {
 }
 
 // Updates returns a parsed channel, parsing ws bytes to proto hub message.
-func (h *Hub) Updates() (<-chan pb.HubMsg, error) {
-	updates := make(chan pb.HubMsg)
+func (h *Hub) Updates() (<-chan pb.Payload, <-chan error) {
+	updates := make(chan pb.Payload)
+	errs := make(chan error)
 	go func() {
 		update := <-h.updates
-		hubMsg := &pb.HubMsg{}
+		hubMsg := &pb.Payload{}
 		err := proto.Unmarshal(update, hubMsg)
 		if err != nil {
-
+			errs <- err
 		}
 		updates <- *hubMsg
 	}()
-	return updates, nil
+	return updates, errs
 }
 
 // Stop closes the hub websocket connection to the backend hub.

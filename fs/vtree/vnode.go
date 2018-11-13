@@ -228,7 +228,6 @@ func (vn *VNode) ToProto() *pb.FSNode {
 
 // AllDirPaths traverse the vnode links and returns a slice of all the child dirpath.
 func (vn *VNode) AllDirPaths() []string {
-	log.Println(vn.Type)
 	if !vn.IsDir() {
 		return []string{}
 	}

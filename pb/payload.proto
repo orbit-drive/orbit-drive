@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package pb;
 
-message HubMsg {
+message Payload {
     string Type = 1;
     bytes Msg = 2;
 }
