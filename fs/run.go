@@ -7,10 +7,10 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/wlwanpan/orbit-drive/fs/api"
-	"github.com/wlwanpan/orbit-drive/fs/db"
-	"github.com/wlwanpan/orbit-drive/fs/sys"
-	"github.com/wlwanpan/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/fs/api"
+	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fs/sys"
+	"github.com/orbit-drive/orbit-drive/fs/vtree"
 )
 
 func loadAndInitVTree(root string) (*vtree.VTree, error) {

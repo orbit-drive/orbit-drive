@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/akamensky/argparse"
-	"github.com/wlwanpan/orbit-drive/fs"
-	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fs"
+	"github.com/orbit-drive/orbit-drive/fs/db"
 )
 
 func main() {

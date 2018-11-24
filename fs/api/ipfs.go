@@ -4,7 +4,7 @@ import (
 	"os"
 
 	shell "github.com/ipfs/go-ipfs-api"
-	"github.com/wlwanpan/orbit-drive/fs/sys"
+	"github.com/orbit-drive/orbit-drive/fs/sys"
 )
 
 var (

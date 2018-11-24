@@ -3,8 +3,8 @@ package fs
 import (
 	"encoding/json"
 
-	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fs/db"
 )
 
 // Config represents the usr configuration settings

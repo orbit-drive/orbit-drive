@@ -6,10 +6,10 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
-	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/sys"
-	"github.com/wlwanpan/orbit-drive/fs/vtree"
-	"github.com/wlwanpan/orbit-drive/pb"
+	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fs/sys"
+	"github.com/orbit-drive/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/pb"
 )
 
 // Hub represents a interface for the backend hub service.

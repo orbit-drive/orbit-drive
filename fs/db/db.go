@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/common"
 )
 
 var (
