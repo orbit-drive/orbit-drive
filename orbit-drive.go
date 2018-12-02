@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/akamensky/argparse"
-	"github.com/wlwanpan/orbit-drive/fs"
-	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fs"
+	"github.com/orbit-drive/orbit-drive/fs/db"
 )
 
 func main() {
@@ -18,6 +18,10 @@ func main() {
 	root := initCmd.String("r", "root", &argparse.Options{
 		Required: false,
 		Help:     "Root path of folder to synchronise.",
+	})
+	authToken := initCmd.String("t", "token", &argparse.Options{
+		Required: false,
+		Help:     "Set authentication token for device synchronization.",
 	})
 	password := initCmd.String("p", "password", &argparse.Options{
 		Required: false,
@@ -48,7 +52,7 @@ func main() {
 
 	switch {
 	case initCmd.Happened():
-		err := fs.NewConfig(*root, *nodeAddr, *hubAddr, *password)
+		err := fs.NewConfig(*root, *authToken, *nodeAddr, *hubAddr, *password)
 		if err != nil {
 			log.Fatal(p.Usage(err))
 		}

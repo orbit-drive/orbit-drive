@@ -3,14 +3,17 @@ package fs
 import (
 	"encoding/json"
 
-	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fs/db"
 )
 
 // Config represents the usr configuration settings
 type Config struct {
 	// Root is the absolute path of the directory to synchronize.
 	Root string `json:"root_path"`
+
+	// AuthToken is the user authentication token for synchronization.
+	AuthToken string `json:"auth_token"`
 
 	// NodeAddr is address of the ipfs node for the api request. (Default: infura)
 	NodeAddr string `json:"node_addr"`
@@ -23,7 +26,7 @@ type Config struct {
 }
 
 // NewConfig initialize a new usr config and save it.
-func NewConfig(root, nodeAddr, hubAddr, path string) error {
+func NewConfig(root, authToken, nodeAddr, hubAddr, path string) error {
 	if root == "" {
 		root = common.GetCurrentDir()
 	}
@@ -34,10 +37,11 @@ func NewConfig(root, nodeAddr, hubAddr, path string) error {
 	}
 
 	c := &Config{
-		Root:     root,
-		NodeAddr: nodeAddr,
-		HubAddr:  hubAddr,
-		Password: common.ToStr(hash),
+		Root:      root,
+		AuthToken: authToken,
+		NodeAddr:  nodeAddr,
+		HubAddr:   hubAddr,
+		Password:  common.ToStr(hash),
 	}
 	return c.Save()
 }

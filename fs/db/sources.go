@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/wlwanpan/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/common"
 )
 
 // Source represents the meta data of a file stored locally.

@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/api"
-	"github.com/wlwanpan/orbit-drive/fs/db"
-	"github.com/wlwanpan/orbit-drive/pb"
+	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fs/api"
+	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/pb"
 )
 
 const (

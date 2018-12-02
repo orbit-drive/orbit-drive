@@ -4,10 +4,10 @@ import (
 	"log"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/db"
-	"github.com/wlwanpan/orbit-drive/fs/sys"
-	"github.com/wlwanpan/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fs/sys"
+	"github.com/orbit-drive/orbit-drive/fs/vtree"
 )
 
 // Watcher is a wrapper to fsnotify watcher and represents

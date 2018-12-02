@@ -2,20 +2,24 @@ package fs
 
 import (
 	"log"
+	"net/http"
 	"net/url"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
-	"github.com/wlwanpan/orbit-drive/common"
-	"github.com/wlwanpan/orbit-drive/fs/sys"
-	"github.com/wlwanpan/orbit-drive/fs/vtree"
-	"github.com/wlwanpan/orbit-drive/pb"
+	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fs/sys"
+	"github.com/orbit-drive/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/pb"
 )
 
 // Hub represents a interface for the backend hub service.
 type Hub struct {
 	// HostAddr is the address of the backend hub service.
 	HostAddr string
+
+	// AuthToken is the user authentication token.
+	AuthToken string
 
 	// conn holds the websocket connection.
 	conn *websocket.Conn
@@ -25,23 +29,38 @@ type Hub struct {
 }
 
 // NewHub creates and start a websocket connection to backend hub.
-func NewHub(addr string) (*Hub, error) {
-	hub := &Hub{HostAddr: addr}
+func NewHub(addr string, authToken string) (*Hub, error) {
+	hub := &Hub{
+		HostAddr:  addr,
+		AuthToken: authToken,
+	}
 	if err := hub.Connect(); err != nil {
 		return &Hub{}, nil
 	}
 	return hub, nil
 }
 
+// Header generate the hub request header.
+func (h *Hub) Header() http.Header {
+	header := http.Header{}
+	header.Set("user-token", h.AuthToken)
+	return header
+}
+
+// URL generate the hub request url.
+func (h *Hub) URL() url.URL {
+	return url.URL{
+		Scheme: "ws",
+		Host:   h.HostAddr,
+		Path:   "/device-sync",
+	}
+}
+
 // Connect dial the backend hub and establish a websocket connection
 // and stores the connection to the hub conn.
 func (h *Hub) Connect() error {
-	u := url.URL{
-		Scheme: "ws",
-		Host:   h.HostAddr,
-		Path:   "/account/subscribe",
-	}
-	conn, _, err := websocket.DefaultDialer.Dial(u.String(), nil)
+	url := h.URL()
+	conn, _, err := websocket.DefaultDialer.Dial(url.String(), h.Header())
 	if err != nil {
 		return err
 	}
