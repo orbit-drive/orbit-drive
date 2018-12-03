@@ -44,7 +44,7 @@ func Run(c *Config) {
 
 	hub, err := NewHub(c.HubAddr, c.AuthToken)
 	if err != nil {
-		sys.Alert(err.Error())
+		log.Printf("Could not establish connection to: %s", c.HubAddr)
 	} else {
 		go hub.Sync(vt)
 		defer hub.Stop()

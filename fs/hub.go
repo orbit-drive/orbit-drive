@@ -35,7 +35,7 @@ func NewHub(addr string, authToken string) (*Hub, error) {
 		AuthToken: authToken,
 	}
 	if err := hub.Connect(); err != nil {
-		return &Hub{}, nil
+		return &Hub{}, err
 	}
 	return hub, nil
 }
@@ -76,7 +76,7 @@ func (h *Hub) Sync(vt *vtree.VTree) {
 		if err != nil {
 			sys.Alert(err.Error())
 		}
-		log.Println(common.ToStr(msg))
+		log.Printf("Sync read message: %s", common.ToStr(msg))
 		h.updates <- msg
 	}
 }
