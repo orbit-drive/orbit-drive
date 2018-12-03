@@ -68,7 +68,9 @@ func Run(c *Config) {
 			if err != nil {
 				sys.Alert(err.Error())
 			}
-			hub.Push(parsedPb)
+			if err = hub.Push(parsedPb); err != nil {
+				log.Println(err)
+			}
 		case <-close:
 			return
 		}

@@ -66,7 +66,7 @@ func (w *Watcher) Start(vt *vtree.VTree) {
 	for {
 		select {
 		case e := <-w.Notifier.Events:
-			if e.Op.String() == "" {
+			if !validEvent(e) {
 				continue
 			}
 			switch e.Op {
@@ -122,4 +122,15 @@ func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	if isDir, _ := common.IsDir(p); isDir {
 		w.RemoveFromWatchList(p) // TODO: Figure out how to get all dir paths removed from vt.Remove
 	}
+}
+
+func validEvent(e fsnotify.Event) bool {
+	if e.Op.String() == "" {
+		return false
+	}
+	hidden, err := common.IsHidden(e.Name)
+	if err != nil {
+		log.Println(err)
+	}
+	return !hidden
 }

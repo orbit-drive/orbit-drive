@@ -26,6 +26,15 @@ func IsDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
+func IsHidden(path string) (bool, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+	filename := fi.Name()
+	return filename[0:1] == ".", nil
+}
+
 func GetHomeDir() string {
 	usr, err := user.Current()
 	if err != nil {
