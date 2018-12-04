@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package pb;
-
-message Payload {
-    string Type = 1;
-    bytes Msg = 2;
-}

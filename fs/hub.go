@@ -5,12 +5,10 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/gorilla/websocket"
 	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
 	"github.com/orbit-drive/orbit-drive/fs/vtree"
-	"github.com/orbit-drive/orbit-drive/pb"
 )
 
 // Hub represents a interface for the backend hub service.
@@ -81,22 +79,6 @@ func (h *Hub) Sync(vt *vtree.VTree) {
 	}
 }
 
-// Updates returns a parsed channel, parsing ws bytes to proto hub message.
-func (h *Hub) Updates() (<-chan pb.Payload, <-chan error) {
-	updates := make(chan pb.Payload)
-	errs := make(chan error)
-	go func() {
-		update := <-h.updates
-		hubMsg := &pb.Payload{}
-		err := proto.Unmarshal(update, hubMsg)
-		if err != nil {
-			errs <- err
-		}
-		updates <- *hubMsg
-	}()
-	return updates, errs
-}
-
 // Stop closes the hub websocket connection to the backend hub.
 func (h *Hub) Stop() {
 	defer h.conn.Close()
@@ -107,7 +89,7 @@ func (h *Hub) Stop() {
 	}
 }
 
-// Push send a msg to websocket connection
-func (h *Hub) Push(msg []byte) error {
+// PushMsg send a msg to websocket connection
+func (h *Hub) PushMsg(msg []byte) error {
 	return h.conn.WriteMessage(websocket.TextMessage, msg)
 }

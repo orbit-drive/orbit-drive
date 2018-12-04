@@ -13,7 +13,7 @@ import (
 	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/api"
 	"github.com/orbit-drive/orbit-drive/fs/db"
-	"github.com/orbit-drive/orbit-drive/pb"
+	"github.com/orbit-drive/orbit-drive/fs/pb"
 )
 
 const (

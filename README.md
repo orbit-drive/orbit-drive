@@ -7,6 +7,16 @@ Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + 
 - golang 1.9
 - [ipfs](https://docs.ipfs.io/introduction/install/) (if running a gateway locally)
 
+## Installation
+
+- git clone https://github.com/orbit-drive/orbit-drive.git
+- git submodule update --init --recursive
+
+Compile protobuf
+```bash
+protoc -I=proto/pb --go_out=fs/pb proto/pb/*.proto
+```
+
 ## Ubuntu 16.04
 
 - CLI
