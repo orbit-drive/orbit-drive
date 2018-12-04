@@ -26,13 +26,14 @@ func IsDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
-func IsHidden(path string) (bool, error) {
+func IsHidden(path string) bool {
 	fi, err := os.Stat(path)
 	if err != nil {
-		return false, err
+		log.Println(err)
+		return false
 	}
 	filename := fi.Name()
-	return filename[0:1] == ".", nil
+	return filename[0:1] == "."
 }
 
 func GetHomeDir() string {

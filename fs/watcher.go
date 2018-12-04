@@ -128,9 +128,5 @@ func validEvent(e fsnotify.Event) bool {
 	if e.Op.String() == "" {
 		return false
 	}
-	hidden, err := common.IsHidden(e.Name)
-	if err != nil {
-		log.Println(err)
-	}
-	return !hidden
+	return !common.IsHidden(e.Name)
 }

@@ -134,6 +134,9 @@ func (vn *VNode) PopulateNodes(s db.Sources) error {
 	var wg sync.WaitGroup
 	for _, f := range files {
 		abspath := filepath.Join(vn.Path, f.Name())
+		if common.IsHidden(abspath) {
+			continue
+		}
 		nn := vn.NewVNode(abspath)
 		if f.IsDir() {
 			nn.SetAsDir()
