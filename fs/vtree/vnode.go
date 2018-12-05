@@ -28,7 +28,10 @@ var (
 	ErrVNodeNotFound = errors.New("vnode does not exist")
 
 	// ErrNotADir is returned when accessing the links of a file type vnode.
-	ErrNotADir = errors.New("file does not have any links")
+	ErrNotADir = errors.New("vnode is not a directory")
+
+	// ErrIsUpToDate is returned when saving/updating a update to vnode.
+	ErrIsUpToDate = errors.New("vnode already up to date")
 )
 
 // VNode represents a file structure where each node can be (i) a dir (ii) a file.
@@ -66,11 +69,6 @@ func (vn *VNode) SetAsDir() {
 	vn.Type = DirCode
 }
 
-// IsDir returns true of vnode is of type dircode.
-func (vn *VNode) IsDir() bool {
-	return vn.Type == DirCode
-}
-
 // SetAsFile sets the vnode type to a file.
 func (vn *VNode) SetAsFile() {
 	vn.Type = FileCode
@@ -81,26 +79,43 @@ func (vn *VNode) SetSource(s *db.Source) {
 	vn.Source = s
 }
 
+// IsNew returns true if the vnode source has not been uploaded.
+func (vn *VNode) IsNew() bool {
+	return vn.Source.IsNew()
+}
+
+// IsDir returns true of vnode is of type dircode.
+func (vn *VNode) IsDir() bool {
+	return vn.Type == DirCode
+}
+
+// IsSourceSame returns true if the vnode source is the same by
+// comparing their size and checksum.
+func (vn *VNode) IsSourceSame(source *db.Source) bool {
+	return vn.Source.IsSame(source)
+}
+
 // SaveSource upload a file path to the ipfs network and
 // save the return hash as the source of the vnode.
 func (vn *VNode) SaveSource() error {
-	// If ipfs hash empty, then upload to network.
-	if !vn.Source.IsUploaded() {
+	// If ipfs hash empty, then upload to ipfs network.
+	if !vn.IsNew() {
 		s, err := api.UploadFile(vn.Path)
 		if err != nil {
 			return err
 		}
 		vn.Source.SetSrc(s)
+		return vn.Source.Save(vn.ID)
 	}
-	return vn.Source.Save(vn.ID)
+	return ErrIsUpToDate
 }
 
 // UpdateSource validates and updates source if given source file differ from current source.
 func (vn *VNode) UpdateSource(source *db.Source) error {
-	if vn.Source.IsSame(source) {
-		return nil
+	if vn.IsSourceSame(source) {
+		return ErrIsUpToDate
 	}
-	vn.Source = source
+	vn.SetSource(source)
 	return vn.SaveSource()
 }
 

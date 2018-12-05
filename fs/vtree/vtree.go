@@ -9,6 +9,8 @@ import (
 	"github.com/orbit-drive/orbit-drive/fs/pb"
 )
 
+type opCode int64
+
 const (
 	// AddedOp represents the create operation
 	AddedOp = iota
@@ -21,7 +23,7 @@ const (
 // State represents a vtree state change.
 type State struct {
 	Path string
-	Op   int64
+	Op   opCode
 }
 
 // VTree represents the file tree structure
@@ -60,7 +62,7 @@ func (vt *VTree) StateChanges() <-chan State {
 }
 
 // PushToState generates and sends a State struct to the state channel.
-func (vt *VTree) PushToState(p string, op int64) {
+func (vt *VTree) PushToState(p string, op opCode) {
 	vt.state <- State{Path: p, Op: op}
 }
 

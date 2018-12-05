@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 // Source represents the meta data of a file stored locally.
@@ -63,7 +63,7 @@ func (s *Source) DeepCopy() *Source {
 }
 
 // IsUploaded check is the Source src is a non zero value.
-func (s *Source) IsUploaded() bool {
+func (s *Source) IsNew() bool {
 	return s.GetSrc() != ""
 }
 

@@ -113,7 +113,10 @@ func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
 		return
 	}
 	source := db.NewSource(p)
-	vn.UpdateSource(source)
+	if err := vn.UpdateSource(source); err != nil {
+		log.Println(err)
+	}
+	vt.PushToState(vn.Path, vtree.ModifiedOp)
 }
 
 func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
