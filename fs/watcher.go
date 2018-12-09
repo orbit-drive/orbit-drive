@@ -41,7 +41,7 @@ func NewWatcher(p string) *Watcher {
 // AddToWatchList adds path to watch.
 func (w *Watcher) AddToWatchList(p string) {
 	if err := w.Notifier.Add(p); err != nil {
-		log.Println(err)
+		w.Notifier.Errors <- err
 	}
 }
 
