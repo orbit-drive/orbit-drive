@@ -28,7 +28,7 @@ go run orbit-drive.go init -r [Path of folder to sync] -p [Password] -n [Ipfs ga
 
 Start synchronizing folder
 ```bash
-go run orbit-drive sync
+go run orbit-drive.go sync
 ```
 
 - Register Service

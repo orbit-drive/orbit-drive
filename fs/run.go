@@ -42,13 +42,10 @@ func Run(c *Config) {
 		sys.Fatal(err.Error())
 	}
 
-	hub, err := NewHub(c.HubAddr, c.AuthToken)
-	if err != nil {
-		log.Printf("Could not establish connection to: %s", c.HubAddr)
-	} else {
-		go hub.Sync(vt)
-		defer hub.Stop()
-	}
+	hub := NewHub(c.HubAddr, c.AuthToken)
+	go hub.Dial()
+	go hub.SyncTree(vt)
+	defer hub.Stop()
 
 	dirPaths := vt.AllDirPaths()
 	watcher := NewWatcher(c.Root)
