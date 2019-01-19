@@ -63,15 +63,17 @@ func (h *Hub) URL() url.URL {
 // and stores the connection to the hub conn.
 func (h *Hub) Dial() error {
 	url := h.URL()
-	log.Printf("Attempting connection to: %s", url.String())
-	conn, _, err := websocket.DefaultDialer.Dial(url.String(), h.Header())
-	if err != nil {
-		log.Println(err)
-		time.Sleep(3 * time.Second)
-		return h.Dial()
+	for {
+		log.Printf("Attempting connection to %s", url.String())
+		conn, _, err := websocket.DefaultDialer.Dial(url.String(), h.Header())
+		if err != nil {
+			log.Println(err)
+			time.Sleep(3 * time.Second)
+			continue
+		}
+		h.conn = conn
+		return nil
 	}
-	h.conn = conn
-	return nil
 }
 
 // SyncTree listens to incoming traffics from the backend hub and

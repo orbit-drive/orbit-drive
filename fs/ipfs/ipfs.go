@@ -1,10 +1,17 @@
-package api
+package ipfs
 
 import (
+	"errors"
 	"os"
 
 	shell "github.com/ipfs/go-ipfs-api"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
+)
+
+var (
+	// ErrNodeOffline is returned when performing an operation to a
+	// disconnected ipfs node.
+	ErrNodeOffline = errors.New("ipfs node not live")
 )
 
 var (
@@ -18,9 +25,17 @@ func InitShell(addr string) {
 	Shell = shell.NewShell(addr)
 }
 
+// IsLive return true if ipfs node is live.
+func IsLive() bool {
+	return Shell.IsUp()
+}
+
 // UploadFile takes a file path and upload it to ipfs
 // and return the generate hash.
 func UploadFile(p string) (string, error) {
+	if !IsLive() {
+		return "", ErrNodeOffline
+	}
 	file, err := os.Open(p)
 	if err != nil {
 		return "", err

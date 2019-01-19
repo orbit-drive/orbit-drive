@@ -7,24 +7,39 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/orbit-drive/orbit-drive/fs/api"
 	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fs/ipfs"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
 	"github.com/orbit-drive/orbit-drive/fs/vtree"
 )
 
-func loadAndInitVTree(root string) (*vtree.VTree, error) {
+func initVTree(c *Config) (*vtree.VTree, error) {
 	sources, err := db.GetSources()
 	if err != nil {
 		return &vtree.VTree{}, err
 	}
 
-	vt, err := vtree.NewVTree(root, sources)
+	vt, err := vtree.NewVTree(c.Root, sources)
 	if err != nil {
 		return &vtree.VTree{}, err
 	}
 	sources.Dump()
 	return vt, nil
+}
+
+func initHub(c *Config, vt *vtree.VTree) *Hub {
+	h := NewHub(c.HubAddr, c.AuthToken)
+	go h.Dial()
+	go h.SyncTree(vt)
+	return h
+}
+
+func initWatcher(c *Config, vt *vtree.VTree) *Watcher {
+	w := NewWatcher(c.Root)
+	dirPaths := vt.AllDirPaths()
+	w.BatchAdd(dirPaths)
+	go w.Start(vt)
+	return w
 }
 
 // Run is the main entry point for orbit drive sync mode by:
@@ -35,22 +50,17 @@ func loadAndInitVTree(root string) (*vtree.VTree, error) {
 func Run(c *Config) {
 	sys.Notify("Starting file sync!")
 	defer sys.Alert("Stopping file sync!")
-	api.InitShell(c.NodeAddr)
+	ipfs.InitShell(c.NodeAddr)
 
-	vt, err := loadAndInitVTree(c.Root)
+	vt, err := initVTree(c)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
 
-	hub := NewHub(c.HubAddr, c.AuthToken)
-	go hub.Dial()
-	go hub.SyncTree(vt)
+	hub := initHub(c, vt)
 	defer hub.Stop()
 
-	dirPaths := vt.AllDirPaths()
-	watcher := NewWatcher(c.Root)
-	watcher.BatchAdd(dirPaths)
-	go watcher.Start(vt)
+	watcher := initWatcher(c, vt)
 	defer watcher.Stop()
 
 	close := make(chan os.Signal, 2)

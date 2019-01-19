@@ -11,8 +11,8 @@ import (
 	"sync"
 
 	"github.com/orbit-drive/orbit-drive/common"
-	"github.com/orbit-drive/orbit-drive/fs/api"
 	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fs/ipfs"
 	"github.com/orbit-drive/orbit-drive/fs/pb"
 )
 
@@ -100,7 +100,7 @@ func (vn *VNode) IsSourceSame(source *db.Source) bool {
 func (vn *VNode) SaveSource() error {
 	// If ipfs hash empty, then upload to ipfs network.
 	if !vn.IsNew() {
-		s, err := api.UploadFile(vn.Path)
+		s, err := ipfs.UploadFile(vn.Path)
 		if err != nil {
 			return err
 		}
