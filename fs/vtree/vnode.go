@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fs/ipfs"
 	"github.com/orbit-drive/orbit-drive/fs/pb"
+	"github.com/orbit-drive/orbit-drive/fsutil"
 )
 
 const (
@@ -56,12 +56,12 @@ type VNode struct {
 // PPrint pretty print vnode as json to console.
 func (vn *VNode) PPrint() {
 	data, _ := json.MarshalIndent(vn, "", "	")
-	log.Println(common.ToStr(data))
+	log.Println(fsutil.ToStr(data))
 }
 
 // GetID parse the vtree id to string and returns.
 func (vn *VNode) GetID() string {
-	return common.ToStr(vn.ID)
+	return fsutil.ToStr(vn.ID)
 }
 
 // SetAsDir sets the vnode type to a dir.
@@ -122,14 +122,14 @@ func (vn *VNode) UpdateSource(source *db.Source) error {
 // GenChildID returns a hash from the current vnode id and the given path.
 func (vn *VNode) GenChildID(p string) []byte {
 	i := append(vn.ID, p...)
-	return common.HashStr(common.ToStr(i))
+	return fsutil.HashStr(fsutil.ToStr(i))
 }
 
 // NewVNode initialize and returns a new VNode under current vnode.
 func (vn *VNode) NewVNode(path string) *VNode {
 	i := append(vn.ID, path...)
 	n := &VNode{
-		ID:     common.HashStr(common.ToStr(i)),
+		ID:     fsutil.HashStr(fsutil.ToStr(i)),
 		Path:   path,
 		Links:  []*VNode{},
 		Source: db.NewSource(path),
@@ -149,7 +149,7 @@ func (vn *VNode) PopulateNodes(s db.Sources) error {
 	var wg sync.WaitGroup
 	for _, f := range files {
 		abspath := filepath.Join(vn.Path, f.Name())
-		if common.IsHidden(abspath) {
+		if fsutil.IsHidden(abspath) {
 			continue
 		}
 		nn := vn.NewVNode(abspath)

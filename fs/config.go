@@ -3,8 +3,8 @@ package fs
 import (
 	"encoding/json"
 
-	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fsutil"
 )
 
 // Config represents the usr configuration settings
@@ -28,10 +28,10 @@ type Config struct {
 // NewConfig initialize a new usr config and save it.
 func NewConfig(root, authToken, nodeAddr, hubAddr, path string) error {
 	if root == "" {
-		root = common.GetCurrentDir()
+		root = fsutil.GetCurrentDir()
 	}
 
-	hash, err := common.PasswordHash(path)
+	hash, err := fsutil.PasswordHash(path)
 	if err != nil {
 		return err
 	}
@@ -41,14 +41,14 @@ func NewConfig(root, authToken, nodeAddr, hubAddr, path string) error {
 		AuthToken: authToken,
 		NodeAddr:  nodeAddr,
 		HubAddr:   hubAddr,
-		Password:  common.ToStr(hash),
+		Password:  fsutil.ToStr(hash),
 	}
 	return c.Save()
 }
 
 // LoadConfig loads a stored config from: (defaults: ~/.orbit-drive/.config)
 func LoadConfig() (*Config, error) {
-	data, err := db.Get(common.ToByte(common.CONFIGKEY))
+	data, err := db.Get(fsutil.ToByte(fsutil.CONFIGKEY))
 	if err != nil {
 		return &Config{}, err
 	}
@@ -76,5 +76,5 @@ func (c *Config) Save() error {
 	if err != nil {
 		return err
 	}
-	return db.Put(common.ToByte(common.CONFIGKEY), p)
+	return db.Put(fsutil.ToByte(fsutil.CONFIGKEY), p)
 }

@@ -4,10 +4,10 @@ import (
 	"log"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
 	"github.com/orbit-drive/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/fsutil"
 )
 
 // Watcher is a wrapper to fsnotify watcher and represents
@@ -100,7 +100,7 @@ func createHandler(w *Watcher, vt *vtree.VTree, p string) {
 		sys.Alert(err.Error())
 		return
 	}
-	if isDir, _ := common.IsDir(p); isDir {
+	if isDir, _ := fsutil.IsDir(p); isDir {
 		w.AddToWatchList(p) // TODO: Figure out how to get all new dir paths from vt.Add
 	}
 }
@@ -122,7 +122,7 @@ func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
 func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	log.Println("Remove", p)
 	vt.Remove(p)
-	if isDir, _ := common.IsDir(p); isDir {
+	if isDir, _ := fsutil.IsDir(p); isDir {
 		w.RemoveFromWatchList(p) // TODO: Figure out how to get all dir paths removed from vt.Remove
 	}
 }
@@ -131,5 +131,5 @@ func validEvent(e fsnotify.Event) bool {
 	if e.Op.String() == "" {
 		return false
 	}
-	return !common.IsHidden(e.Name)
+	return !fsutil.IsHidden(e.Name)
 }

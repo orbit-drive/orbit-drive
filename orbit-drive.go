@@ -47,7 +47,9 @@ func main() {
 		log.Fatal(p.Usage(err))
 	}
 
-	db.InitDb()
+	if err := db.InitDb(); err != nil {
+		log.Fatal(err)
+	}
 	defer db.CloseDb()
 
 	switch {

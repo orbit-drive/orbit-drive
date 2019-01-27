@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fsutil"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -31,7 +31,7 @@ func NewSource(path string) *Source {
 	if err != nil || fi.IsDir() {
 		return &Source{}
 	}
-	checksum, err := common.Md5Checksum(path)
+	checksum, err := fsutil.Md5Checksum(path)
 	if err != nil {
 		// CHeck how to deal with error here also
 		log.Println(err)
@@ -86,9 +86,9 @@ func GetSources() (Sources, error) {
 	store := make(Sources)
 	iter := Db.NewIterator(nil, nil)
 	for iter.Next() {
-		k := common.ToStr(iter.Key())
+		k := fsutil.ToStr(iter.Key())
 		switch k {
-		case common.ROOTKEY, common.CONFIGKEY:
+		case fsutil.ROOTKEY, fsutil.CONFIGKEY:
 		default:
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)
@@ -122,7 +122,7 @@ func (s Sources) ExtractSource(k string) *Source {
 func (s Sources) Dump() error {
 	b := new(leveldb.Batch)
 	for k := range s {
-		b.Delete(common.ToByte(k))
+		b.Delete(fsutil.ToByte(k))
 	}
 	return Db.Write(b, nil)
 }
@@ -136,7 +136,7 @@ func (s Sources) Save() error {
 			log.Println(err)
 			continue
 		}
-		b.Put(common.ToByte(k), data)
+		b.Put(fsutil.ToByte(k), data)
 	}
 	return Db.Write(b, nil)
 }

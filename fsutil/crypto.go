@@ -1,4 +1,4 @@
-package common
+package fsutil
 
 import (
 	"crypto/md5"

@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fs/ipfs"
+	"github.com/orbit-drive/orbit-drive/fs/p2p"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
 	"github.com/orbit-drive/orbit-drive/fs/vtree"
 )
@@ -57,8 +58,15 @@ func Run(c *Config) {
 		sys.Fatal(err.Error())
 	}
 
-	hub := initHub(c, vt)
-	defer hub.Stop()
+	// Moving hub to p2p connection to sync device.
+	// hub := initHub(c, vt)
+	// defer hub.Stop()
+
+	go func() {
+		if err := p2p.InitConn(); err != nil {
+			sys.Fatal(err.Error())
+		}
+	}()
 
 	watcher := initWatcher(c, vt)
 	defer watcher.Stop()
@@ -75,9 +83,10 @@ func Run(c *Config) {
 			if err != nil {
 				sys.Alert(err.Error())
 			}
-			if err = hub.PushMsg(parsedPb); err != nil {
-				log.Println(err)
-			}
+			log.Println(parsedPb)
+			// if err = hub.PushMsg(parsedPb); err != nil {
+			// 	log.Println(err)
+			// }
 		case <-close:
 			return
 		}
