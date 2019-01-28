@@ -4,9 +4,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fs/pb"
+	"github.com/orbit-drive/orbit-drive/fsutil"
 )
 
 type opCode int64
@@ -41,7 +41,7 @@ func NewVTree(path string, s db.Sources) (*VTree, error) {
 	vt := &VTree{
 		Head: &VNode{
 			Path:   path,
-			ID:     common.ToByte(common.ROOTKEY),
+			ID:     fsutil.ToByte(fsutil.ROOTKEY),
 			Type:   DirCode,
 			Links:  []*VNode{},
 			Source: &db.Source{},
@@ -89,7 +89,7 @@ func (vt *VTree) Add(path string) error {
 		return err
 	}
 	n := vn.NewVNode(path)
-	isDir, err := common.IsDir(path)
+	isDir, err := fsutil.IsDir(path)
 	if err != nil {
 		return err
 	}

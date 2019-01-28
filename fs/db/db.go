@@ -1,11 +1,10 @@
 package db
 
 import (
-	"log"
 	"os"
 
+	"github.com/orbit-drive/orbit-drive/fsutil"
 	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/orbit-drive/orbit-drive/common"
 )
 
 var (
@@ -14,18 +13,16 @@ var (
 )
 
 // InitDb initialize the global Db instance located at (HOME_PATH/.orbit-drive/datastore)
-func InitDb() {
-	cp := common.GetHomeDir() + "/.orbit-drive/datastore"
+func InitDb() error {
+	cp := fsutil.GetConfigDir() + "/datastore"
 
-	if !common.PathExists(cp) {
+	if !fsutil.PathExists(cp) {
 		os.Mkdir(cp, os.ModePerm)
 	}
 
 	var err error
 	Db, err = leveldb.OpenFile(cp, nil)
-	if err != nil {
-		log.Fatalln(err)
-	}
+	return err
 }
 
 // Put is a wrapper to leveldb Put func

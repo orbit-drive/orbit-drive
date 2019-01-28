@@ -8,9 +8,19 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
 	"github.com/orbit-drive/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/fsutil"
+)
+
+// -----------------------------------
+// Deprecating ...
+// Moving to p2p conn for device sync
+// -----------------------------------
+
+const (
+	// RedialAttemptTick tick interval for attempting websocket connection.
+	RedialAttemptTick = 3 * time.Second
 )
 
 var (
@@ -68,7 +78,7 @@ func (h *Hub) Dial() error {
 		conn, _, err := websocket.DefaultDialer.Dial(url.String(), h.Header())
 		if err != nil {
 			log.Println(err)
-			time.Sleep(3 * time.Second)
+			time.Sleep(RedialAttemptTick)
 			continue
 		}
 		h.conn = conn
@@ -84,7 +94,7 @@ func (h *Hub) SyncTree(vt *vtree.VTree) error {
 		if err != nil {
 			sys.Alert(err.Error())
 		}
-		log.Printf("Sync read message: %s", common.ToStr(msg))
+		log.Printf("Sync read message: %s", fsutil.ToStr(msg))
 		h.updates <- msg
 	}
 }

@@ -1,4 +1,4 @@
-package common
+package fsutil
 
 func ToByte(s string) []byte {
 	return []byte(s)

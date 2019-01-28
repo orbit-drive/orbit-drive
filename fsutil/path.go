@@ -1,10 +1,11 @@
-package common
+package fsutil
 
 import (
-	"log"
 	"os"
 	"os/user"
 	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func PathExists(path string) bool {
@@ -29,7 +30,7 @@ func IsDir(path string) (bool, error) {
 func IsHidden(path string) bool {
 	fi, err := os.Stat(path)
 	if err != nil {
-		log.Println(err)
+		log.Warn(err)
 		return false
 	}
 	filename := fi.Name()
@@ -50,4 +51,8 @@ func GetCurrentDir() string {
 		log.Fatal(err)
 	}
 	return dir
+}
+
+func GetConfigDir() string {
+	return GetHomeDir() + CONFIG_FOLDER_PATH
 }

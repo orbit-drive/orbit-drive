@@ -1,13 +1,12 @@
 package fs
 
 import (
-	"log"
-
 	"github.com/fsnotify/fsnotify"
-	"github.com/orbit-drive/orbit-drive/common"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fs/sys"
 	"github.com/orbit-drive/orbit-drive/fs/vtree"
+	"github.com/orbit-drive/orbit-drive/fsutil"
+	log "github.com/sirupsen/logrus"
 )
 
 // Watcher is a wrapper to fsnotify watcher and represents
@@ -24,10 +23,10 @@ type Watcher struct {
 }
 
 // NewWatcher initialize a new Watcher.
-func NewWatcher(p string) *Watcher {
+func NewWatcher(p string) (*Watcher, error) {
 	n, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Println(err)
+		return &Watcher{}, err
 	}
 	w := &Watcher{
 		Done:     make(chan bool),
@@ -35,7 +34,7 @@ func NewWatcher(p string) *Watcher {
 		Notifier: n,
 	}
 	w.AddToWatchList(w.Path)
-	return w
+	return w, nil
 }
 
 // AddToWatchList adds path to watch.
@@ -77,7 +76,7 @@ func (w *Watcher) Start(vt *vtree.VTree) {
 			case fsnotify.Remove: // manually remove from folder triggers fsnotify.Rename
 				removeHandler(w, vt, e.Name)
 			default:
-				log.Println(e.String())
+				log.WithField("event", e.String()).Warn("Watcher unhandled event")
 				continue
 			}
 		case err := <-w.Notifier.Errors:
@@ -95,18 +94,18 @@ func (w *Watcher) Stop() {
 }
 
 func createHandler(w *Watcher, vt *vtree.VTree, p string) {
-	log.Println("Create", p)
+	log.WithField("path", p).Info("Watcher detected file op: create")
 	if err := vt.Add(p); err != nil {
 		sys.Alert(err.Error())
 		return
 	}
-	if isDir, _ := common.IsDir(p); isDir {
+	if isDir, _ := fsutil.IsDir(p); isDir {
 		w.AddToWatchList(p) // TODO: Figure out how to get all new dir paths from vt.Add
 	}
 }
 
 func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
-	log.Println("Write", p)
+	log.WithField("path", p).Info("Watcher detected file op: write")
 	vn, err := vt.Find(p)
 	if err != nil {
 		sys.Alert(err.Error())
@@ -114,15 +113,15 @@ func writeHandler(w *Watcher, vt *vtree.VTree, p string) {
 	}
 	source := db.NewSource(p)
 	if err := vn.UpdateSource(source); err != nil {
-		log.Println(err)
+		log.Warn(err)
 	}
 	vt.PushToState(vn.Path, vtree.ModifiedOp)
 }
 
 func removeHandler(w *Watcher, vt *vtree.VTree, p string) {
-	log.Println("Remove", p)
+	log.WithField("path", p).Info("Watcher detected file op: remove")
 	vt.Remove(p)
-	if isDir, _ := common.IsDir(p); isDir {
+	if isDir, _ := fsutil.IsDir(p); isDir {
 		w.RemoveFromWatchList(p) // TODO: Figure out how to get all dir paths removed from vt.Remove
 	}
 }
@@ -131,5 +130,5 @@ func validEvent(e fsnotify.Event) bool {
 	if e.Op.String() == "" {
 		return false
 	}
-	return !common.IsHidden(e.Name)
+	return !fsutil.IsHidden(e.Name)
 }

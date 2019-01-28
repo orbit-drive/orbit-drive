@@ -2,10 +2,10 @@ package db
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
-	"github.com/orbit-drive/orbit-drive/common"
+	"github.com/orbit-drive/orbit-drive/fsutil"
+	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -31,10 +31,10 @@ func NewSource(path string) *Source {
 	if err != nil || fi.IsDir() {
 		return &Source{}
 	}
-	checksum, err := common.Md5Checksum(path)
+	checksum, err := fsutil.Md5Checksum(path)
 	if err != nil {
 		// CHeck how to deal with error here also
-		log.Println(err)
+		log.Warn(err)
 	}
 	return &Source{
 		Src:      "",
@@ -62,7 +62,7 @@ func (s *Source) DeepCopy() *Source {
 	}
 }
 
-// IsUploaded check is the Source src is a non zero value.
+// IsNew check is the Source src is a non zero value.
 func (s *Source) IsNew() bool {
 	return s.GetSrc() != ""
 }
@@ -86,14 +86,14 @@ func GetSources() (Sources, error) {
 	store := make(Sources)
 	iter := Db.NewIterator(nil, nil)
 	for iter.Next() {
-		k := common.ToStr(iter.Key())
+		k := fsutil.ToStr(iter.Key())
 		switch k {
-		case common.ROOTKEY, common.CONFIGKEY:
+		case fsutil.ROOTKEY, fsutil.CONFIGKEY:
 		default:
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)
 			if err != nil {
-				log.Println(err)
+				log.Warn(err)
 				continue
 			}
 			store[k] = s
@@ -122,7 +122,7 @@ func (s Sources) ExtractSource(k string) *Source {
 func (s Sources) Dump() error {
 	b := new(leveldb.Batch)
 	for k := range s {
-		b.Delete(common.ToByte(k))
+		b.Delete(fsutil.ToByte(k))
 	}
 	return Db.Write(b, nil)
 }
@@ -133,10 +133,10 @@ func (s Sources) Save() error {
 	for k, source := range s {
 		data, err := json.Marshal(source)
 		if err != nil {
-			log.Println(err)
+			log.Warn(err)
 			continue
 		}
-		b.Put(common.ToByte(k), data)
+		b.Put(fsutil.ToByte(k), data)
 	}
 	return Db.Write(b, nil)
 }
