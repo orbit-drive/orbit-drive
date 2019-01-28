@@ -12,36 +12,32 @@ type Config struct {
 	// Root is the absolute path of the directory to synchronize.
 	Root string `json:"root_path"`
 
-	// AuthToken is the user authentication token for synchronization.
-	AuthToken string `json:"auth_token"`
+	// SecretPhrase is the user authentication token for synchronization.
+	SecretPhrase string `json:"secret_phrase"`
 
 	// NodeAddr is address of the ipfs node for the api request. (Default: infura)
 	NodeAddr string `json:"node_addr"`
-
-	// HubAddr is the address of the backend service for device sync.
-	HubAddr string `json:"hub_addr"`
-
-	// Password is the usr password set used for file encryption.
-	Password string `json:"password_hash"`
 }
 
+// ---------------------------------------------------------
+// Refact config to using config file / Dont save in leveldb
+// https://micro.mu/docs/go-config.html
+
 // NewConfig initialize a new usr config and save it.
-func NewConfig(root, authToken, nodeAddr, hubAddr, path string) error {
+func NewConfig(root, secretPhrase, nodeAddr string) error {
 	if root == "" {
 		root = fsutil.GetCurrentDir()
 	}
 
-	hash, err := fsutil.PasswordHash(path)
+	spHash, err := fsutil.SecureHash(secretPhrase)
 	if err != nil {
 		return err
 	}
 
 	c := &Config{
-		Root:      root,
-		AuthToken: authToken,
-		NodeAddr:  nodeAddr,
-		HubAddr:   hubAddr,
-		Password:  fsutil.ToStr(hash),
+		Root:         root,
+		SecretPhrase: string(spHash),
+		NodeAddr:     nodeAddr,
 	}
 	return c.Save()
 }
@@ -58,16 +54,6 @@ func LoadConfig() (*Config, error) {
 		return &Config{}, err
 	}
 	return c, nil
-}
-
-// Update overwrites the config hub and ipfs address if a non zero value is provided.
-func (c *Config) Update(n string, h string) {
-	if n != "" {
-		c.NodeAddr = n
-	}
-	if h != "" {
-		c.HubAddr = h
-	}
 }
 
 // Save persist the current configuration.

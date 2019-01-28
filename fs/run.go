@@ -28,14 +28,6 @@ func initVTree(c *Config) (*vtree.VTree, error) {
 	return vt, nil
 }
 
-func initHub(c *Config, vt *vtree.VTree) *Hub {
-
-	h := NewHub(c.HubAddr, c.AuthToken)
-	go h.Dial()
-	go h.SyncTree(vt)
-	return h
-}
-
 func initWatcher(c *Config, vt *vtree.VTree) (*Watcher, error) {
 	w, err := NewWatcher(c.Root)
 	if err != nil {

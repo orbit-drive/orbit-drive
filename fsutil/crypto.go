@@ -16,8 +16,8 @@ func HashStr(p string) []byte {
 	return hash[:]
 }
 
-// PasswordHash
-func PasswordHash(p string) ([]byte, error) {
+// SecureHash
+func SecureHash(p string) ([]byte, error) {
 	return bcrypt.GenerateFromPassword(ToByte(p), bcrypt.DefaultCost)
 }
 

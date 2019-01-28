@@ -38,13 +38,9 @@ func main() {
 		Required: false,
 		Help:     "Root path of folder to synchronise.",
 	})
-	authToken := initCmd.String("t", "token", &argparse.Options{
+	secretPhrase := initCmd.String("s", "secret", &argparse.Options{
 		Required: false,
-		Help:     "Set authentication token for device synchronization.",
-	})
-	password := initCmd.String("p", "password", &argparse.Options{
-		Required: false,
-		Help:     "Set password for file encryption.",
+		Help:     "Set a secret phrase and share with our devices you with to sync with.",
 	})
 
 	// sync command
@@ -55,11 +51,6 @@ func main() {
 		Required: false,
 		Default:  "https://ipfs.infura.io:5001",
 		Help:     "Ipfs node address, will default to an infura node if none is provided.",
-	})
-	hubAddr := p.String("b", "hub-addr", &argparse.Options{
-		Required: false,
-		Default:  "localhost:4000",
-		Help:     "Hub address for device synchronization.",
 	})
 
 	if err := p.Parse(os.Args); err != nil {
@@ -76,7 +67,7 @@ func main() {
 
 	switch {
 	case initCmd.Happened():
-		err := fs.NewConfig(*root, *authToken, *nodeAddr, *hubAddr, *password)
+		err := fs.NewConfig(*root, *secretPhrase, *nodeAddr)
 		if err != nil {
 			log.Fatal(p.Usage(err))
 		}
@@ -84,9 +75,8 @@ func main() {
 	case syncCmd.Happened():
 		c, err := fs.LoadConfig()
 		if err != nil {
-			log.Fatal(p.Usage(err))
+			log.Fatal(err)
 		}
-		c.Update("", *hubAddr)
 		fs.Run(c)
 	default:
 		os.Exit(0)
