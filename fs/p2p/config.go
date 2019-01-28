@@ -1,9 +1,8 @@
 package p2p
 
 import (
-	"log"
-
 	maddr "github.com/multiformats/go-multiaddr"
+	log "github.com/sirupsen/logrus"
 )
 
 var defaultBootstrapAddrStrings = []string{
@@ -20,7 +19,7 @@ func getBootstrapAddrs() []maddr.Multiaddr {
 	for _, bootstrapAddr := range defaultBootstrapAddrStrings {
 		addr, err := maddr.NewMultiaddr(bootstrapAddr)
 		if err != nil {
-			log.Println(err)
+			log.Info(err)
 		}
 		bootstrapAddrs = append(bootstrapAddrs, addr)
 	}

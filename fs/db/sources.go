@@ -2,10 +2,10 @@ package db
 
 import (
 	"encoding/json"
-	"log"
 	"os"
 
 	"github.com/orbit-drive/orbit-drive/fsutil"
+	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -34,7 +34,7 @@ func NewSource(path string) *Source {
 	checksum, err := fsutil.Md5Checksum(path)
 	if err != nil {
 		// CHeck how to deal with error here also
-		log.Println(err)
+		log.Warn(err)
 	}
 	return &Source{
 		Src:      "",
@@ -62,7 +62,7 @@ func (s *Source) DeepCopy() *Source {
 	}
 }
 
-// IsUploaded check is the Source src is a non zero value.
+// IsNew check is the Source src is a non zero value.
 func (s *Source) IsNew() bool {
 	return s.GetSrc() != ""
 }
@@ -93,7 +93,7 @@ func GetSources() (Sources, error) {
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)
 			if err != nil {
-				log.Println(err)
+				log.Warn(err)
 				continue
 			}
 			store[k] = s
@@ -133,7 +133,7 @@ func (s Sources) Save() error {
 	for k, source := range s {
 		data, err := json.Marshal(source)
 		if err != nil {
-			log.Println(err)
+			log.Warn(err)
 			continue
 		}
 		b.Put(fsutil.ToByte(k), data)

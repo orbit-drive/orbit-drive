@@ -1,10 +1,10 @@
 package sys
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gen2brain/beeep"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 func Notify(m ...string) {
 	msg := strings.Join(m, "")
 	beeep.Notify(notifierTitle, msg, appIcon)
-	log.Println(msg)
+	log.Info(msg)
 }
 
 // Alert sends an alert notification to the system foreground
@@ -25,7 +25,7 @@ func Notify(m ...string) {
 func Alert(m ...string) {
 	msg := strings.Join(m, "")
 	beeep.Alert(notifierTitle, msg, appIcon)
-	log.Println(msg)
+	log.Warn(msg)
 }
 
 // Fatal sends an alert notification to the system foreground,
@@ -33,5 +33,5 @@ func Alert(m ...string) {
 func Fatal(m ...string) {
 	msg := strings.Join(m, "")
 	beeep.Alert(notifierTitle, msg, appIcon)
-	log.Fatalln(msg)
+	log.Fatal(msg)
 }

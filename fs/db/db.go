@@ -14,7 +14,7 @@ var (
 
 // InitDb initialize the global Db instance located at (HOME_PATH/.orbit-drive/datastore)
 func InitDb() error {
-	cp := fsutil.GetHomeDir() + fsutil.CONFIG_FOLDER_PATH + "/datastore"
+	cp := fsutil.GetConfigDir() + "/datastore"
 
 	if !fsutil.PathExists(cp) {
 		os.Mkdir(cp, os.ModePerm)

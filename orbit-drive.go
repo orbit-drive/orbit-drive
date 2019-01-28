@@ -2,13 +2,32 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/akamensky/argparse"
 	"github.com/orbit-drive/orbit-drive/fs"
 	"github.com/orbit-drive/orbit-drive/fs/db"
+	"github.com/orbit-drive/orbit-drive/fsutil"
+	log "github.com/sirupsen/logrus"
 )
+
+func initLogger() *os.File {
+	logFilePath := filepath.Join(fsutil.GetConfigDir(), "info.log")
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	mw := io.MultiWriter(os.Stdout, logFile)
+	log.SetOutput(mw)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
+
+	return logFile
+}
 
 func main() {
 	p := argparse.NewParser("orbit-drive", "File uploader and synchronizer built on IPFS and Infura.")
@@ -46,6 +65,9 @@ func main() {
 	if err := p.Parse(os.Args); err != nil {
 		log.Fatal(p.Usage(err))
 	}
+
+	f := initLogger()
+	defer f.Close()
 
 	if err := db.InitDb(); err != nil {
 		log.Fatal(err)

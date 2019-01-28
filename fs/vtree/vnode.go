@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -14,6 +13,7 @@ import (
 	"github.com/orbit-drive/orbit-drive/fs/ipfs"
 	"github.com/orbit-drive/orbit-drive/fs/pb"
 	"github.com/orbit-drive/orbit-drive/fsutil"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -56,7 +56,7 @@ type VNode struct {
 // PPrint pretty print vnode as json to console.
 func (vn *VNode) PPrint() {
 	data, _ := json.MarshalIndent(vn, "", "	")
-	log.Println(fsutil.ToStr(data))
+	log.Info(fsutil.ToStr(data))
 }
 
 // GetID parse the vtree id to string and returns.
