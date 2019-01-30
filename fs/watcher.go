@@ -48,6 +48,7 @@ func (w *Watcher) AddToWatchList(p string) {
 func (w *Watcher) BatchAdd(paths []string) {
 	for _, path := range paths {
 		w.AddToWatchList(path)
+		log.WithField("path", path).Info("New path added to watcher!")
 	}
 }
 

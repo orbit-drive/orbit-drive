@@ -36,10 +36,12 @@ func main() {
 	initCmd := p.NewCommand("init", "Initialize folder to sync.")
 	root := initCmd.String("r", "root", &argparse.Options{
 		Required: false,
+		Default:  fsutil.GetCurrentDir(),
 		Help:     "Root path of folder to synchronise.",
 	})
 	secretPhrase := initCmd.String("s", "secret", &argparse.Options{
 		Required: false,
+		Default:  "",
 		Help:     "Set a secret phrase and share with our devices you with to sync with.",
 	})
 

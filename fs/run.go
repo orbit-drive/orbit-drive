@@ -33,17 +33,14 @@ func initWatcher(c *Config, vt *vtree.VTree) (*Watcher, error) {
 	if err != nil {
 		return &Watcher{}, err
 	}
+	log.WithField("path", c.Root).Info("Watching folder")
 	dirPaths := vt.AllDirPaths()
 	w.BatchAdd(dirPaths)
 	go w.Start(vt)
 	return w, nil
 }
 
-// Run is the main entry point for orbit drive sync mode by:log
-// (i) generating a virtual tree representation of the syncing folder.
-// (ii) starts the backend hub for device synchronization.
-// (iii) starts the watcher for file changes in the syncing folder.
-// (iv) relaying all local changes to backend hub.
+// Run is the main entry point for orbit drive p2p sync.
 func Run(c *Config) {
 	sys.Notify("Starting file sync!")
 	defer sys.Alert("Stopping file sync!")
@@ -51,28 +48,27 @@ func Run(c *Config) {
 	log.WithField("node-addr", c.NodeAddr).Info("Initializing ipfs shell...")
 	ipfs.InitShell(c.NodeAddr)
 
+	go func() {
+		log.Info("Initializing p2p connection to bootstrap nodes...")
+		if err := p2p.InitConn(); err != nil {
+			sys.Fatal(err.Error())
+		}
+		log.Info("p2p network connections successfully established!")
+	}()
+
 	log.Info("Initializing vtree...")
 	vt, err := initVTree(c)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
-	log.Info("vtree successfully initialized!")
-
-	// Moving hub to p2p connection to sync device.
-	// hub := initHub(c, vt)
-	// defer hub.Stop()
-
-	go func() {
-		if err = p2p.InitConn(); err != nil {
-			sys.Fatal(err.Error())
-		}
-	}()
+	log.Info("Vtree successfully initialized!")
 
 	log.Info("Initializing watcher...")
 	watcher, err := initWatcher(c, vt)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
+	log.Info("Watcher initialized!")
 	defer watcher.Stop()
 
 	close := make(chan os.Signal, 2)

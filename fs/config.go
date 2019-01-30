@@ -2,8 +2,10 @@ package fs
 
 import (
 	"encoding/json"
+	"errors"
+	"os"
+	"path/filepath"
 
-	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fsutil"
 )
 
@@ -19,48 +21,61 @@ type Config struct {
 	NodeAddr string `json:"node_addr"`
 }
 
-// ---------------------------------------------------------
-// Refact config to using config file / Dont save in leveldb
-// https://micro.mu/docs/go-config.html
-
-// NewConfig initialize a new usr config and save it.
+// NewConfig initialize a new usr config and save it to config file.
 func NewConfig(root, secretPhrase, nodeAddr string) error {
-	if root == "" {
-		root = fsutil.GetCurrentDir()
+	if secretPhrase == "" {
+		return errors.New("no secret phrase provided")
 	}
+	configFile, err := createConfigFile()
+	if err != nil {
+		return nil
+	}
+	defer configFile.Close()
 
 	spHash, err := fsutil.SecureHash(secretPhrase)
 	if err != nil {
 		return err
 	}
 
-	c := &Config{
+	config := &Config{
 		Root:         root,
 		SecretPhrase: string(spHash),
 		NodeAddr:     nodeAddr,
 	}
-	return c.Save()
-}
 
-// LoadConfig loads a stored config from: (defaults: ~/.orbit-drive/.config)
-func LoadConfig() (*Config, error) {
-	data, err := db.Get(fsutil.ToByte(fsutil.CONFIGKEY))
-	if err != nil {
-		return &Config{}, err
-	}
-	c := &Config{}
-	err = json.Unmarshal(data, c)
-	if err != nil {
-		return &Config{}, err
-	}
-	return c, nil
-}
-
-// Save persist the current configuration.
-func (c *Config) Save() error {
-	p, err := json.Marshal(c)
+	configData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
 		return err
 	}
-	return db.Put(fsutil.ToByte(fsutil.CONFIGKEY), p)
+
+	_, err = configFile.Write(configData)
+	return err
+}
+
+// LoadConfig reads config from config.json file.
+func LoadConfig() (*Config, error) {
+	configPath := configFilePath()
+	config := &Config{}
+	configFile, err := os.Open(configPath)
+	if err != nil {
+		return &Config{}, err
+	}
+	parser := json.NewDecoder(configFile)
+	if err = parser.Decode(config); err != nil {
+		return &Config{}, err
+	}
+	return config, nil
+}
+
+func createConfigFile() (*os.File, error) {
+	configFilePath := configFilePath()
+	if fsutil.PathExists(configFilePath) {
+		return &os.File{}, nil
+	}
+	return os.Create(configFilePath)
+}
+
+func configFilePath() string {
+	configDir := fsutil.GetConfigDir()
+	return filepath.Join(configDir, "config.json")
 }
