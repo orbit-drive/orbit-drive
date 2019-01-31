@@ -50,7 +50,7 @@ func Run(c *Config) {
 
 	go func() {
 		log.Info("Initializing p2p connection to bootstrap nodes...")
-		if err := p2p.InitConn(); err != nil {
+		if err := p2p.InitConn(c.GetNetworkID()); err != nil {
 			sys.Fatal(err.Error())
 		}
 		log.Info("p2p network connections successfully established!")

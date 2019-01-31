@@ -69,7 +69,7 @@ func main() {
 
 	switch {
 	case initCmd.Happened():
-		err := fs.NewConfig(*root, *secretPhrase, *nodeAddr)
+		err := fs.InitConfig(*root, *secretPhrase, *nodeAddr)
 		if err != nil {
 			log.Fatal(p.Usage(err))
 		}

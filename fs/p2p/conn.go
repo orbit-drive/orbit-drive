@@ -17,9 +17,8 @@ import (
 )
 
 const (
-	ProtocolID = "/od/sync/1.0.0"
-
-	AccountKey = "test-account-key"
+	// ProtocolID represents a header id for data stream processing between peers.
+	ProtocolID string = "/od/sync/1.0.0"
 )
 
 func handleStream(stream inet.Stream) {
@@ -47,7 +46,9 @@ func createHost(ctx context.Context) (host.Host, error) {
 	return host, nil
 }
 
-func InitConn() error {
+// InitConn initialize connection to libp2p bootstrap at
+// a given network id (rendez vous).
+func InitConn(nid string) error {
 	ctx := context.Background()
 	host, err := createHost(ctx)
 	if err != nil {
@@ -65,7 +66,6 @@ func InitConn() error {
 	var wg sync.WaitGroup
 	for _, peerAddr := range getBootstrapAddrs() {
 		peerinfo, _ := peerstore.InfoFromP2pAddr(peerAddr)
-		// log.WithField("peer-addr", peerAddr.String()).Warning("Attempting connection to peer")
 		wg.Add(1)
 		go func(peerAddr maddr.Multiaddr) {
 			defer wg.Done()
@@ -83,11 +83,11 @@ func InitConn() error {
 
 	log.Warn("Announcing to peers...")
 	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, AccountKey)
+	discovery.Advertise(ctx, routingDiscovery, nid)
 	log.Info("Announcing successful")
 
 	log.Warn("Searching for other peers...")
-	peerChan, err := routingDiscovery.FindPeers(ctx, AccountKey)
+	peerChan, err := routingDiscovery.FindPeers(ctx, nid)
 	if err != nil {
 		return err
 	}
