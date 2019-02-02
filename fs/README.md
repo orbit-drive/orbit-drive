@@ -2,4 +2,5 @@
 
 ### File added
 
-![File added op diagram](https://orbit-drive.github.io/orbit-drive/fs/add_op.svg)
+![Alt text](https://raw.githubusercontent.com/orbit-drive/orbit-drive/master/fs/assets/add_op.svg?sanitize=true)
+<img src="https://raw.githubusercontent.com/orbit-drive/orbit-drive/master/fs/assets/add_op.svg?sanitize=true">
