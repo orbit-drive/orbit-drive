@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ConfigFileName string = "config.json"
+	CONFIGFILENAME string = "config.json"
 )
 
 // Config represents the usr configuration settings
@@ -85,5 +85,5 @@ func createConfigFile() (*os.File, error) {
 
 func configFilePath() string {
 	configDir := fsutil.GetConfigDir()
-	return filepath.Join(configDir, ConfigFileName)
+	return filepath.Join(configDir, CONFIGFILENAME)
 }

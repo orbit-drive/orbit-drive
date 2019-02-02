@@ -8,6 +8,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	CONFIGPATH string = "/.orbit-drive"
+)
+
 func PathExists(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
@@ -54,5 +58,5 @@ func GetCurrentDir() string {
 }
 
 func GetConfigDir() string {
-	return GetHomeDir() + CONFIG_FOLDER_PATH
+	return GetHomeDir() + CONFIGPATH
 }

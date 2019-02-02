@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
+	"github.com/orbit-drive/orbit-drive/fs/vtree"
 	"github.com/orbit-drive/orbit-drive/fsutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -88,7 +89,7 @@ func GetSources() (Sources, error) {
 	for iter.Next() {
 		k := fsutil.ToStr(iter.Key())
 		switch k {
-		case fsutil.ROOTKEY:
+		case vtree.ROOTKEY:
 		default:
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)
