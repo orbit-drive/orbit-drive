@@ -8,6 +8,7 @@ import (
 
 	"github.com/akamensky/argparse"
 	"github.com/orbit-drive/orbit-drive/fs"
+	"github.com/orbit-drive/orbit-drive/fs/config"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fsutil"
 	log "github.com/sirupsen/logrus"
@@ -45,7 +46,7 @@ func main() {
 		Help:     "Set a secret phrase and share with our devices you with to sync with.",
 	})
 
-	// sync command
+	// Sync command
 	syncCmd := p.NewCommand("sync", "Start syncing folder to the ipfs network.")
 
 	// Optional command
@@ -69,17 +70,16 @@ func main() {
 
 	switch {
 	case initCmd.Happened():
-		err := fs.InitConfig(*root, *secretPhrase, *nodeAddr)
+		err := config.Init(*root, *secretPhrase, *nodeAddr)
 		if err != nil {
 			log.Fatal(p.Usage(err))
 		}
 		fmt.Println("Configured! Run the following command to start syncing: orbit-drive sync")
 	case syncCmd.Happened():
-		c, err := fs.LoadConfig()
-		if err != nil {
+		if err := config.Load(); err != nil {
 			log.Fatal(err)
 		}
-		fs.Run(c)
+		fs.Sync()
 	default:
 		os.Exit(0)
 	}

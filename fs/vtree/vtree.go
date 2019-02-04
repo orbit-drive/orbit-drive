@@ -1,6 +1,7 @@
 package vtree
 
 import (
+	"errors"
 	"path/filepath"
 	"sync"
 
@@ -31,6 +32,7 @@ type State struct {
 // VTree represents the file tree structure
 type VTree struct {
 	sync.Mutex
+
 	// Head is the root pointer to the virtual tree of the file structure being synchronized.
 	Head *VNode
 
@@ -39,20 +41,25 @@ type VTree struct {
 }
 
 // NewVTree initialize a new virtual tree (VTree) given an absolute path.
-func NewVTree(path string, s db.Sources) (*VTree, error) {
+func NewVTree(rootPath string, s db.Sources) (*VTree, error) {
+	isDir, err := fsutil.IsDir(rootPath)
+	if err == nil && !isDir {
+		err = errors.New("root path must be a directory")
+	}
+	if err != nil {
+		return &VTree{}, err
+	}
 	vt := &VTree{
 		Head: &VNode{
-			Path:   path,
-			ID:     fsutil.ToByte(ROOTKEY),
+			Name:   filepath.Base(rootPath), // name of dir being sync.
+			ID:     fsutil.ToByte(ROOTKEY),  // special id for root node.
 			Type:   DirCode,
-			Links:  []*VNode{},
-			Source: &db.Source{},
+			Links:  []*VNode{}, // children
+			parent: nil,
 		},
 		state: make(chan State),
 	}
-
-	err := vt.PopulateNodes(s)
-	if err != nil {
+	if err = vt.PopulateNodes(s); err != nil {
 		return &VTree{}, nil
 	}
 	return vt, nil
