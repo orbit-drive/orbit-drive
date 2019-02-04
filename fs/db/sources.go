@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/orbit-drive/orbit-drive/fs/vtree"
 	"github.com/orbit-drive/orbit-drive/fsutil"
 	log "github.com/sirupsen/logrus"
 	"github.com/syndtr/goleveldb/leveldb"
@@ -12,8 +11,8 @@ import (
 
 // Source represents the meta data of a file stored locally.
 type Source struct {
-	// Src represents the ipfs hash of the file.
-	Src string `json:"src"`
+	// SID represents the ipfs hash of the file.
+	SID string `json:"src_id"`
 
 	// Size represents the size of the file.
 	Size int64 `json:"size"`
@@ -25,7 +24,7 @@ type Source struct {
 // Sources represents the store of the locally saved files.
 type Sources map[string]*Source
 
-// NewSource generates a new source instance froma given path
+// NewSource generates a new source instance from a given path
 // and validates the path, computes the file checksum and size.
 func NewSource(path string) *Source {
 	fi, err := os.Stat(path)
@@ -38,7 +37,7 @@ func NewSource(path string) *Source {
 		log.Warn(err)
 	}
 	return &Source{
-		Src:      "",
+		SID:      "",
 		Size:     fi.Size(),
 		Checksum: checksum,
 	}
@@ -46,18 +45,18 @@ func NewSource(path string) *Source {
 
 // SetSrc is a setter for Source src.
 func (s *Source) SetSrc(src string) {
-	s.Src = src
+	s.SID = src
 }
 
 // GetSrc is a getter for Source src.
 func (s Source) GetSrc() string {
-	return s.Src
+	return s.SID
 }
 
 // DeepCopy deep copies a source instance and return a new instance.
 func (s *Source) DeepCopy() *Source {
 	return &Source{
-		Src:      s.GetSrc(),
+		SID:      s.GetSrc(),
 		Size:     s.Size,
 		Checksum: s.Checksum,
 	}
@@ -89,7 +88,7 @@ func GetSources() (Sources, error) {
 	for iter.Next() {
 		k := fsutil.ToStr(iter.Key())
 		switch k {
-		case vtree.ROOTKEY:
+		case "ROOT_TREE": // import cycle from vtree if import key
 		default:
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)

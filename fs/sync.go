@@ -6,6 +6,7 @@ import (
 	"syscall"
 
 	"github.com/gogo/protobuf/proto"
+	"github.com/orbit-drive/orbit-drive/fs/config"
 	"github.com/orbit-drive/orbit-drive/fs/db"
 	"github.com/orbit-drive/orbit-drive/fs/ipfs"
 	"github.com/orbit-drive/orbit-drive/fs/p2p"
@@ -14,13 +15,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func initVTree(c *Config) (*vtree.VTree, error) {
+func initVTree() (*vtree.VTree, error) {
 	sources, err := db.GetSources()
 	if err != nil {
 		return &vtree.VTree{}, err
 	}
 
-	vt, err := vtree.NewVTree(c.Root, sources)
+	vt, err := vtree.NewVTree(config.GetRootPath(), sources)
 	if err != nil {
 		return &vtree.VTree{}, err
 	}
@@ -28,43 +29,43 @@ func initVTree(c *Config) (*vtree.VTree, error) {
 	return vt, nil
 }
 
-func initWatcher(c *Config, vt *vtree.VTree) (*Watcher, error) {
-	w, err := NewWatcher(c.Root)
+func initWatcher(vt *vtree.VTree) (*Watcher, error) {
+	w, err := NewWatcher(config.GetRootPath())
 	if err != nil {
 		return &Watcher{}, err
 	}
-	log.WithField("path", c.Root).Info("Watching folder")
+	log.WithField("path", config.GetRootPath()).Info("Watching folder")
 	dirPaths := vt.AllDirPaths()
 	w.BatchAdd(dirPaths)
 	go w.Start(vt)
 	return w, nil
 }
 
-// Run is the main entry point for orbit drive p2p sync.
-func Run(c *Config) {
+// Sync is the main entry point for orbit drive p2p sync.
+func Sync() {
 	sys.Notify("Starting file sync!")
 	defer sys.Alert("Stopping file sync!")
 
-	log.WithField("node-addr", c.NodeAddr).Info("Initializing ipfs shell...")
-	ipfs.InitShell(c.NodeAddr)
+	log.WithField("node-addr", config.GetNodeAddr()).Info("Initializing ipfs shell...")
+	ipfs.InitShell(config.GetNodeAddr())
 
 	go func() {
 		log.Info("Initializing p2p connection to bootstrap nodes...")
-		if err := p2p.InitConn(c.GetNetworkID()); err != nil {
+		if err := p2p.InitConn(config.GetNID()); err != nil {
 			sys.Fatal(err.Error())
 		}
 		log.Info("p2p network connections successfully established!")
 	}()
 
 	log.Info("Initializing vtree...")
-	vt, err := initVTree(c)
+	vt, err := initVTree()
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
 	log.Info("Vtree successfully initialized!")
 
 	log.Info("Initializing watcher...")
-	watcher, err := initWatcher(c, vt)
+	watcher, err := initWatcher(vt)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}

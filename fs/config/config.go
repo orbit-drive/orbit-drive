@@ -1,4 +1,4 @@
-package fs
+package config
 
 import (
 	"encoding/json"
@@ -10,7 +10,12 @@ import (
 )
 
 const (
+	// CONFIGFILENAME represents the config file name.
 	CONFIGFILENAME string = "config.json"
+)
+
+var (
+	config *Config
 )
 
 // Config represents the usr configuration settings
@@ -25,10 +30,20 @@ type Config struct {
 	NodeAddr string `json:"node_addr"`
 }
 
-// GetNetworkID returns a hash of the config secret key for p2p rendez vous.
-func (c *Config) GetNetworkID() string {
-	nID, _ := fsutil.SecureHash(c.SecretPhrase)
+// GetRootPath returns the loaded config root path.
+func GetRootPath() string {
+	return config.Root
+}
+
+// GetNID returns a hash of the config secret key for p2p rendez vous.
+func GetNID() string {
+	nID, _ := fsutil.SecureHash(config.SecretPhrase)
 	return string(nID)
+}
+
+// GetNodeAddr returns the loaded config node addr.
+func GetNodeAddr() string {
+	return config.NodeAddr
 }
 
 // NewConfig initialize a new usr config and save it to config file.
@@ -40,7 +55,8 @@ func NewConfig(root, secretPhrase, nodeAddr string) *Config {
 	}
 }
 
-func InitConfig(root, secretPhrase, nodeAddr string) error {
+// Init initialize a new config file.
+func Init(root, secretPhrase, nodeAddr string) error {
 	if secretPhrase == "" {
 		return errors.New("no secret phrase provided")
 	}
@@ -49,7 +65,7 @@ func InitConfig(root, secretPhrase, nodeAddr string) error {
 		return nil
 	}
 	defer configFile.Close()
-	config := NewConfig(root, secretPhrase, nodeAddr)
+	config = NewConfig(root, secretPhrase, nodeAddr)
 
 	configData, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
@@ -60,19 +76,19 @@ func InitConfig(root, secretPhrase, nodeAddr string) error {
 	return err
 }
 
-// LoadConfig reads config from config.json file.
-func LoadConfig() (*Config, error) {
+// Load reads config from config.json file.
+func Load() error {
 	configPath := configFilePath()
-	config := &Config{}
+	config = &Config{}
 	configFile, err := os.Open(configPath)
 	if err != nil {
-		return &Config{}, err
+		return err
 	}
 	parser := json.NewDecoder(configFile)
 	if err = parser.Decode(config); err != nil {
-		return &Config{}, err
+		return err
 	}
-	return config, nil
+	return nil
 }
 
 func createConfigFile() (*os.File, error) {
