@@ -29,9 +29,37 @@ func handleStream(stream inet.Stream) {
 	go writeHandler(rw)
 }
 
-func readHandler(rw *bufio.ReadWriter) {}
+func readHandler(rw *bufio.ReadWriter) {
+	for {
+		str, err := rw.ReadString('\n')
+		if err != nil {
+			log.Warn(err)
+		}
 
-func writeHandler(rw *bufio.ReadWriter) {}
+		if str == "" {
+			return
+		}
+		if str != "\n" {
+			log.WithFields(log.Fields{
+				"msg": str,
+			}).Info("Received message from peer")
+		}
+	}
+}
+
+func writeHandler(rw *bufio.ReadWriter) {
+	for {
+		_, err := rw.WriteString("this is a test \n")
+		if err != nil {
+			log.Warn(err)
+		}
+
+		// Why flush buffer ??
+		if err = rw.Flush(); err != nil {
+			log.Warn(err)
+		}
+	}
+}
 
 func createHost(ctx context.Context) (host.Host, error) {
 	listenMAddr, _ := maddr.NewMultiaddr("/ip4/127.0.0.1/tcp/6666")
