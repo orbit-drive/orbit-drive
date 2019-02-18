@@ -15,6 +15,11 @@ import (
 
 func initLogger() *os.File {
 	logFilePath := filepath.Join(fsutil.GetConfigDir(), "info.log")
+	if !fsutil.PathExists(logFilePath) {
+		os.Create(logFilePath)
+	}
+
+	log.Println(logFilePath)
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
@@ -40,7 +45,7 @@ func main() {
 		Help:     "Root path of folder to synchronise.",
 	})
 	secretPhrase := initCmd.String("s", "secret", &argparse.Options{
-		Required: false,
+		Required: true,
 		Default:  "",
 		Help:     "Set a secret phrase and share with our devices you with to sync with.",
 	})
@@ -54,13 +59,16 @@ func main() {
 		Default:  "https://ipfs.infura.io:5001",
 		Help:     "Ipfs node address, will default to an infura node if none is provided.",
 	})
+	p2pPort := p.String("p", "p2p-port", &argparse.Options{
+		Required: false,
+		Default:  "6666",
+		Help:     "P2P port to use to connect to other peers via tcp.",
+	})
 
+	// TODO: Add check if port is in use.
 	if err := p.Parse(os.Args); err != nil {
 		log.Fatal(p.Usage(err))
 	}
-
-	f := initLogger()
-	defer f.Close()
 
 	if err := db.InitDb(); err != nil {
 		log.Fatal(err)
@@ -69,7 +77,7 @@ func main() {
 
 	switch {
 	case initCmd.Happened():
-		err := fs.NewConfig(*root, *secretPhrase, *nodeAddr)
+		err := fs.NewConfig(*root, *secretPhrase, *nodeAddr, *p2pPort)
 		if err != nil {
 			log.Fatal(p.Usage(err))
 		}
@@ -79,6 +87,9 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		f := initLogger()
+		defer f.Close()
 		fs.Run(c)
 	default:
 		os.Exit(0)

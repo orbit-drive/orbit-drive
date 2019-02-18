@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package pb;
+
+message Payload {
+    oneof msg {
+        LoginPayload login = 1;
+        RegisterPayload register = 2;
+    }
+}
+
+message LoginPayload {
+    string username = 1;
+    string password = 2;
+}
+
+message RegisterPayload {
+    // to add more user details here
+    string username = 1;
+    string password = 2;
+}
+
+message PortalResp {
+    oneof resp {
+        string token = 2;
+        User user = 3;
+    }
+}
+
+message Token {
+    string token = 1;
+}
+
+message User {
+    string name = 1;
+    int64 max_devices = 2;
+    repeated Devices devices = 3;
+}
+
+message Devices {
+
+}

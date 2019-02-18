@@ -9,6 +9,10 @@ import (
 	"github.com/orbit-drive/orbit-drive/fsutil"
 )
 
+const (
+	CONFIG_FILENAME = "config.json"
+)
+
 // Config represents the usr configuration settings
 type Config struct {
 	// Root is the absolute path of the directory to synchronize.
@@ -19,10 +23,13 @@ type Config struct {
 
 	// NodeAddr is address of the ipfs node for the api request. (Default: infura)
 	NodeAddr string `json:"node_addr"`
+
+	// Port to use by p2p connections.
+	P2PPort string `json:"p2p_port"`
 }
 
 // NewConfig initialize a new usr config and save it to config file.
-func NewConfig(root, secretPhrase, nodeAddr string) error {
+func NewConfig(root, secretPhrase, nodeAddr, p2pPort string) error {
 	if secretPhrase == "" {
 		return errors.New("no secret phrase provided")
 	}
@@ -41,6 +48,7 @@ func NewConfig(root, secretPhrase, nodeAddr string) error {
 		Root:         root,
 		SecretPhrase: string(spHash),
 		NodeAddr:     nodeAddr,
+		P2PPort:      p2pPort,
 	}
 
 	configData, err := json.MarshalIndent(config, "", "  ")
@@ -58,11 +66,11 @@ func LoadConfig() (*Config, error) {
 	config := &Config{}
 	configFile, err := os.Open(configPath)
 	if err != nil {
-		return &Config{}, err
+		return nil, err
 	}
 	parser := json.NewDecoder(configFile)
 	if err = parser.Decode(config); err != nil {
-		return &Config{}, err
+		return nil, err
 	}
 	return config, nil
 }
@@ -70,12 +78,16 @@ func LoadConfig() (*Config, error) {
 func createConfigFile() (*os.File, error) {
 	configFilePath := configFilePath()
 	if fsutil.PathExists(configFilePath) {
-		return &os.File{}, nil
+		f, err := os.Open(configFilePath)
+		if err != nil {
+			return nil, err
+		}
+		return f, nil
 	}
 	return os.Create(configFilePath)
 }
 
 func configFilePath() string {
 	configDir := fsutil.GetConfigDir()
-	return filepath.Join(configDir, "config.json")
+	return filepath.Join(configDir, CONFIG_FILENAME)
 }

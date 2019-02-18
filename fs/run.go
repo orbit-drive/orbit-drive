@@ -15,20 +15,25 @@ import (
 )
 
 func initVTree(c *Config) (*vtree.VTree, error) {
+	log.Info("Initializing vtree...")
+
 	sources, err := db.GetSources()
 	if err != nil {
-		return &vtree.VTree{}, err
+		return nil, err
 	}
 
 	vt, err := vtree.NewVTree(c.Root, sources)
 	if err != nil {
-		return &vtree.VTree{}, err
+		return nil, err
 	}
 	sources.Dump()
+	log.Info("Vtree successfully initialized!")
 	return vt, nil
 }
 
 func initWatcher(c *Config, vt *vtree.VTree) (*Watcher, error) {
+	log.Info("Initializing watcher...")
+
 	w, err := NewWatcher(c.Root)
 	if err != nil {
 		return &Watcher{}, err
@@ -37,7 +42,17 @@ func initWatcher(c *Config, vt *vtree.VTree) (*Watcher, error) {
 	dirPaths := vt.AllDirPaths()
 	w.BatchAdd(dirPaths)
 	go w.Start(vt)
+
+	log.Info("Watcher initialized!")
 	return w, nil
+}
+
+func initP2P(c *Config) {
+	log.Info("Initializing p2p connection to bootstrap nodes...")
+	if err := p2p.InitConn(c.P2PPort, c.SecretPhrase); err != nil {
+		sys.Fatal(err.Error())
+	}
+	log.Info("p2p network connections successfully established!")
 }
 
 // Run is the main entry point for orbit drive p2p sync.
@@ -48,27 +63,17 @@ func Run(c *Config) {
 	log.WithField("node-addr", c.NodeAddr).Info("Initializing ipfs shell...")
 	ipfs.InitShell(c.NodeAddr)
 
-	go func() {
-		log.Info("Initializing p2p connection to bootstrap nodes...")
-		if err := p2p.InitConn(); err != nil {
-			sys.Fatal(err.Error())
-		}
-		log.Info("p2p network connections successfully established!")
-	}()
+	go initP2P(c)
 
-	log.Info("Initializing vtree...")
 	vt, err := initVTree(c)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
-	log.Info("Vtree successfully initialized!")
 
-	log.Info("Initializing watcher...")
 	watcher, err := initWatcher(c, vt)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
-	log.Info("Watcher initialized!")
 	defer watcher.Stop()
 
 	close := make(chan os.Signal, 2)

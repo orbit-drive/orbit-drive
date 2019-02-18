@@ -3,6 +3,8 @@ package p2p
 import (
 	"bufio"
 	"context"
+	"fmt"
+	"os"
 	"sync"
 
 	libp2p "github.com/libp2p/go-libp2p"
@@ -13,56 +15,62 @@ import (
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
 	maddr "github.com/multiformats/go-multiaddr"
+	protobufCodec "github.com/multiformats/go-multicodec/protobuf"
+	"github.com/orbit-drive/orbit-drive/fs/pb"
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	ProtocolID = "/od/sync/1.0.0"
-
-	AccountKey = "test-account-key"
 )
 
-func handleStream(stream inet.Stream) {
-	rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-	go readHandler(rw)
-	go writeHandler(rw)
+func handleStream(s inet.Stream) {
+	go readHandler(s)
+	go writeHandler(s)
 }
 
-func readHandler(rw *bufio.ReadWriter) {
+func readHandler(s inet.Stream) {
 	for {
-		str, err := rw.ReadString('\n')
+		data := &pb.MessageData{}
+		decoder := protobufCodec.Multicodec(nil).Decoder(bufio.NewReader(s))
+		err := decoder.Decode(data)
 		if err != nil {
 			log.Warn(err)
-		}
-
-		if str == "" {
 			return
 		}
-		if str != "\n" {
-			log.WithFields(log.Fields{
-				"msg": str,
-			}).Info("Received message from peer")
-		}
+		log.WithFields(log.Fields{
+			"msg": string(data.GetMessage()),
+		}).Info("Received message from peer")
 	}
 }
 
-func writeHandler(rw *bufio.ReadWriter) {
+func writeHandler(s inet.Stream) {
+	stdReader := bufio.NewReader(os.Stdin)
+
 	for {
-		_, err := rw.WriteString("this is a test \n")
+		fmt.Print("> ")
+		sendData, err := stdReader.ReadString('\n')
 		if err != nil {
-			log.Warn(err)
+			log.Fatal("Error reading from stdin")
 		}
 
-		// Why flush buffer ??
-		if err = rw.Flush(); err != nil {
-			log.Warn(err)
+		msgData := &pb.MessageData{
+			Message: sendData,
 		}
+
+		writer := bufio.NewWriter(s)
+		enc := protobufCodec.Multicodec(nil).Encoder(writer)
+		if err = enc.Encode(msgData); err != nil {
+			log.Warn(err)
+			return
+		}
+		writer.Flush()
 	}
 }
 
-func createHost(ctx context.Context) (host.Host, error) {
-	listenMAddr, _ := maddr.NewMultiaddr("/ip4/127.0.0.1/tcp/6666")
+func createHost(ctx context.Context, port string) (host.Host, error) {
+	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%s", port)
+	listenMAddr, _ := maddr.NewMultiaddr(addr)
 	hostOption := libp2p.ListenAddrs(listenMAddr)
 
 	host, err := libp2p.New(ctx, hostOption)
@@ -70,17 +78,17 @@ func createHost(ctx context.Context) (host.Host, error) {
 		return host, err
 	}
 
-	// log.WithField("host-id", host.ID()).Info("Host created")
 	host.SetStreamHandler(protocol.ID(ProtocolID), handleStream)
 	return host, nil
 }
 
-func InitConn() error {
+func InitConn(port, rendezvous string) error {
 	ctx := context.Background()
-	host, err := createHost(ctx)
+	host, err := createHost(ctx, port)
 	if err != nil {
 		return err
 	}
+	log.WithField("host-id", host.ID()).Info("Host created")
 
 	kademliaDHT, err := libp2pdht.New(ctx, host)
 	if err != nil {
@@ -93,12 +101,15 @@ func InitConn() error {
 	var wg sync.WaitGroup
 	for _, peerAddr := range getBootstrapAddrs() {
 		peerinfo, _ := peerstore.InfoFromP2pAddr(peerAddr)
-		// log.WithField("peer-addr", peerAddr.String()).Warning("Attempting connection to peer")
 		wg.Add(1)
 		go func(peerAddr maddr.Multiaddr) {
 			defer wg.Done()
+
 			if err = host.Connect(ctx, *peerinfo); err != nil {
-				log.Warn(err)
+				log.WithFields(log.Fields{
+					"peer-id": peerinfo.ID,
+					"err-msg": err.Error(),
+				}).Warn("Connection to peer failed")
 			} else {
 				log.WithFields(log.Fields{
 					"peer-id":   peerinfo.ID,
@@ -111,34 +122,29 @@ func InitConn() error {
 
 	log.Warn("Announcing to peers...")
 	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, AccountKey)
+	discovery.Advertise(ctx, routingDiscovery, rendezvous)
 	log.Info("Announcing successful")
 
 	log.Warn("Searching for other peers...")
-	peerChan, err := routingDiscovery.FindPeers(ctx, AccountKey)
+	peerChan, err := routingDiscovery.FindPeers(ctx, rendezvous)
 	if err != nil {
 		return err
 	}
 
 	for peer := range peerChan {
+		log.WithField("peer-id", peer.ID).Info("Peer discovered !!!")
+
 		if peer.ID == host.ID() {
 			continue
 		}
 		stream, err := host.NewStream(ctx, peer.ID, protocol.ID(ProtocolID))
-
 		if err != nil {
-			log.WithFields(log.Fields{
-				"peer-id": peer.ID,
-				"err-msg": err.Error(),
-			}).Warn("Connection to peer failed")
+			log.WithField("peer-id", peer.ID).Info("Peer connection failed")
 			continue
 		} else {
-			rw := bufio.NewReadWriter(bufio.NewReader(stream), bufio.NewWriter(stream))
-
-			go writeHandler(rw)
-			go readHandler(rw)
+			go writeHandler(stream)
+			go readHandler(stream)
 		}
-
 		log.WithField("peer-id", peer.ID).Info("Peer connection successful")
 	}
 

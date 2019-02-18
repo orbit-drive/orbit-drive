@@ -1,6 +1,9 @@
 # Orbit Drive
 
-Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + [Infura](https://infura.io)
+Proof of concept storage file system built on top of:
+- [libp2p](https://libp2p.io/)
+- [IPFS](https://ipfs.io/)
+- [Infura](https://infura.io)
 
 ## Requirements
 
@@ -9,12 +12,9 @@ Proof of concept storage file system built on top of [IPFS](https://ipfs.io/) + 
 
 ## Installation
 
-- git clone https://github.com/orbit-drive/orbit-drive.git
-- git submodule update --init --recursive
-
 Compile protobuf
 ```bash
-protoc -I=proto/pb --go_out=fs/pb proto/pb/*.proto
+protoc -I=fs/pb --go_out=fs/pb fs/pb/*.proto
 ```
 
 ## Ubuntu 16.04
