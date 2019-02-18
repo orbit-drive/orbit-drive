@@ -56,13 +56,13 @@ func main() {
 	// Optional command
 	nodeAddr := p.String("n", "node-addr", &argparse.Options{
 		Required: false,
-		Default:  "https://ipfs.infura.io:5001",
-		Help:     "Ipfs node address, will default to an infura node if none is provided.",
+		// Default:  "https://ipfs.infura.io:5001",
+		Help: "Ipfs node address, will default to an infura node if none is provided.",
 	})
 	p2pPort := p.String("p", "p2p-port", &argparse.Options{
 		Required: false,
-		Default:  "6666",
-		Help:     "P2P port to use to connect to other peers via tcp.",
+		// Default:  "6666",
+		Help: "P2P port to use to connect to other peers via tcp.",
 	})
 
 	// TODO: Add check if port is in use.
@@ -83,7 +83,7 @@ func main() {
 		}
 		fmt.Println("Configured! Run the following command to start syncing: orbit-drive sync")
 	case syncCmd.Happened():
-		c, err := fs.LoadConfig()
+		c, err := fs.LoadConfig(*nodeAddr, *p2pPort)
 		if err != nil {
 			log.Fatal(err)
 		}

@@ -12,6 +12,8 @@ import (
 type opCode int64
 
 const (
+	ROOTKEY = "ROOT_TREE"
+
 	// AddedOp represents the create operation
 	AddedOp = iota
 	// ModifiedOp represents the create operation
@@ -41,7 +43,7 @@ func NewVTree(path string, s db.Sources) (*VTree, error) {
 	vt := &VTree{
 		Head: &VNode{
 			Path:   path,
-			ID:     fsutil.ToByte(fsutil.ROOTKEY),
+			ID:     fsutil.ToByte(ROOTKEY),
 			Type:   DirCode,
 			Links:  []*VNode{},
 			Source: &db.Source{},

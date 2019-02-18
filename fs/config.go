@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	CONFIG_FILENAME = "config.json"
+	CONFIGFILENAME string = "config.json"
 )
 
 // Config represents the usr configuration settings
@@ -61,7 +61,7 @@ func NewConfig(root, secretPhrase, nodeAddr, p2pPort string) error {
 }
 
 // LoadConfig reads config from config.json file.
-func LoadConfig() (*Config, error) {
+func LoadConfig(nodeAddr, p2pPort string) (*Config, error) {
 	configPath := configFilePath()
 	config := &Config{}
 	configFile, err := os.Open(configPath)
@@ -71,6 +71,12 @@ func LoadConfig() (*Config, error) {
 	parser := json.NewDecoder(configFile)
 	if err = parser.Decode(config); err != nil {
 		return nil, err
+	}
+	if nodeAddr != "" {
+		config.NodeAddr = nodeAddr
+	}
+	if p2pPort != "" {
+		config.P2PPort = p2pPort
 	}
 	return config, nil
 }
@@ -89,5 +95,5 @@ func createConfigFile() (*os.File, error) {
 
 func configFilePath() string {
 	configDir := fsutil.GetConfigDir()
-	return filepath.Join(configDir, CONFIG_FILENAME)
+	return filepath.Join(configDir, CONFIGFILENAME)
 }

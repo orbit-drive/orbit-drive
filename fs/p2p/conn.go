@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	ProtocolID = "/od/sync/1.0.0"
+	// ProtocolID represents a header id for data stream processing between peers.
+	ProtocolID string = "/od/sync/1.0.0"
 )
 
 func handleStream(s inet.Stream) {
@@ -82,7 +83,7 @@ func createHost(ctx context.Context, port string) (host.Host, error) {
 	return host, nil
 }
 
-func InitConn(port, rendezvous string) error {
+func InitConn(port, nid string) error {
 	ctx := context.Background()
 	host, err := createHost(ctx, port)
 	if err != nil {
@@ -122,11 +123,11 @@ func InitConn(port, rendezvous string) error {
 
 	log.Warn("Announcing to peers...")
 	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, rendezvous)
+	discovery.Advertise(ctx, routingDiscovery, nid)
 	log.Info("Announcing successful")
 
 	log.Warn("Searching for other peers...")
-	peerChan, err := routingDiscovery.FindPeers(ctx, rendezvous)
+	peerChan, err := routingDiscovery.FindPeers(ctx, nid)
 	if err != nil {
 		return err
 	}

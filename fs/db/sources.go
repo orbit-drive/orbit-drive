@@ -88,7 +88,7 @@ func GetSources() (Sources, error) {
 	for iter.Next() {
 		k := fsutil.ToStr(iter.Key())
 		switch k {
-		case fsutil.ROOTKEY:
+		case "ROOT_TREE":
 		default:
 			s := &Source{}
 			err := json.Unmarshal(iter.Value(), s)
