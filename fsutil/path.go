@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	CONFIGPATH string = "/.orbit-drive"
+	CONFIGPATH string = "/.orbit-drive1"
 )
 
 func PathExists(path string) bool {

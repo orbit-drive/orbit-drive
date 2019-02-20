@@ -2,19 +2,13 @@ package p2p
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
-	"sync"
 
-	libp2p "github.com/libp2p/go-libp2p"
 	discovery "github.com/libp2p/go-libp2p-discovery"
-	host "github.com/libp2p/go-libp2p-host"
 	libp2pdht "github.com/libp2p/go-libp2p-kad-dht"
 	inet "github.com/libp2p/go-libp2p-net"
-	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
-	maddr "github.com/multiformats/go-multiaddr"
 	protobufCodec "github.com/multiformats/go-multicodec/protobuf"
 	"github.com/orbit-drive/orbit-drive/fs/pb"
 	log "github.com/sirupsen/logrus"
@@ -25,12 +19,7 @@ const (
 	ProtocolID string = "/od/sync/1.0.0"
 )
 
-func handleStream(s inet.Stream) {
-	go readHandler(s)
-	go writeHandler(s)
-}
-
-func readHandler(s inet.Stream) {
+func ReadHandler(s inet.Stream) {
 	for {
 		data := &pb.MessageData{}
 		decoder := protobufCodec.Multicodec(nil).Decoder(bufio.NewReader(s))
@@ -45,7 +34,7 @@ func readHandler(s inet.Stream) {
 	}
 }
 
-func writeHandler(s inet.Stream) {
+func WriteHandler(s inet.Stream) {
 	stdReader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -69,65 +58,33 @@ func writeHandler(s inet.Stream) {
 	}
 }
 
-func createHost(ctx context.Context, port string) (host.Host, error) {
-	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%s", port)
-	listenMAddr, _ := maddr.NewMultiaddr(addr)
-	hostOption := libp2p.ListenAddrs(listenMAddr)
-
-	host, err := libp2p.New(ctx, hostOption)
-	if err != nil {
-		return host, err
-	}
-
-	host.SetStreamHandler(protocol.ID(ProtocolID), handleStream)
-	return host, nil
-}
-
+// InitConn main entry for initialization of p2p connections.
 func InitConn(port, nid string) error {
-	ctx := context.Background()
-	host, err := createHost(ctx, port)
+	lnode, err := NewLNode(port, nid)
 	if err != nil {
 		return err
 	}
-	log.WithField("host-id", host.ID()).Info("Host created")
+	log.WithField("host-id", lnode.ID()).Info("Host created")
 
-	kademliaDHT, err := libp2pdht.New(ctx, host)
+	// Initialize kademlia distributed hash table from LNode host.
+	kademliaDHT, err := libp2pdht.New(lnode.GetContext(), lnode)
 	if err != nil {
 		return err
 	}
-	if err = kademliaDHT.Bootstrap(ctx); err != nil {
+	if err = kademliaDHT.Bootstrap(lnode.GetContext()); err != nil {
 		return err
 	}
 
-	var wg sync.WaitGroup
-	for _, peerAddr := range getBootstrapAddrs() {
-		peerinfo, _ := peerstore.InfoFromP2pAddr(peerAddr)
-		wg.Add(1)
-		go func(peerAddr maddr.Multiaddr) {
-			defer wg.Done()
+	lnode.ConnectToBootstrapNodes()
 
-			if err = host.Connect(ctx, *peerinfo); err != nil {
-				log.WithFields(log.Fields{
-					"peer-id": peerinfo.ID,
-					"err-msg": err.Error(),
-				}).Warn("Connection to peer failed")
-			} else {
-				log.WithFields(log.Fields{
-					"peer-id":   peerinfo.ID,
-					"peer-addr": peerAddr.String(),
-				}).Info("Connection established with peer")
-			}
-		}(peerAddr)
-	}
-	wg.Wait()
-
+	// TODO: move routing to LNode ?
 	log.Warn("Announcing to peers...")
 	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(ctx, routingDiscovery, nid)
+	discovery.Advertise(lnode.GetContext(), routingDiscovery, nid)
 	log.Info("Announcing successful")
 
 	log.Warn("Searching for other peers...")
-	peerChan, err := routingDiscovery.FindPeers(ctx, nid)
+	peerChan, err := routingDiscovery.FindPeers(lnode.GetContext(), nid)
 	if err != nil {
 		return err
 	}
@@ -135,16 +92,15 @@ func InitConn(port, nid string) error {
 	for peer := range peerChan {
 		log.WithField("peer-id", peer.ID).Info("Peer discovered !!!")
 
-		if peer.ID == host.ID() {
+		if peer.ID == lnode.ID() {
 			continue
 		}
-		stream, err := host.NewStream(ctx, peer.ID, protocol.ID(ProtocolID))
+		stream, err := lnode.NewStream(lnode.GetContext(), peer.ID, protocol.ID(ProtocolID))
 		if err != nil {
 			log.WithField("peer-id", peer.ID).Info("Peer connection failed")
 			continue
 		} else {
-			go writeHandler(stream)
-			go readHandler(stream)
+			lnode.AddStream(stream)
 		}
 		log.WithField("peer-id", peer.ID).Info("Peer connection successful")
 	}
