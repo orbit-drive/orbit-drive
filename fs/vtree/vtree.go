@@ -42,8 +42,8 @@ type VTree struct {
 func NewVTree(path string, s db.Sources) (*VTree, error) {
 	vt := &VTree{
 		Head: &VNode{
-			Path:   path,
 			ID:     fsutil.ToByte(ROOTKEY),
+			Path:   path,
 			Type:   DirCode,
 			Links:  []*VNode{},
 			Source: &db.Source{},
@@ -123,4 +123,8 @@ func (vt *VTree) ToProto() *pb.FSTree {
 // AllDirPaths returns all the dir path in the vtree.
 func (vt *VTree) AllDirPaths() []string {
 	return vt.Head.AllDirPaths()
+}
+
+func (vt *VTree) MerkleHash() []byte {
+	return vt.Head.MerkleHash()
 }

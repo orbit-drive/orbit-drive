@@ -69,6 +69,7 @@ func Run(c *Config) {
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
+	log.WithField("hash", vt.MerkleHash()).Info("VTree loaded merkle hash")
 
 	watcher, err := initWatcher(c, vt)
 	if err != nil {

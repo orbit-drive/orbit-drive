@@ -12,7 +12,11 @@ import (
 
 // HashStr parsing helpers
 func HashStr(p string) []byte {
-	hash := sha256.Sum256(ToByte(p))
+	return HashBytes(ToByte(p))
+}
+
+func HashBytes(b []byte) []byte {
+	hash := sha256.Sum256(b)
 	return hash[:]
 }
 
