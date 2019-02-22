@@ -125,6 +125,6 @@ func (vt *VTree) AllDirPaths() []string {
 	return vt.Head.AllDirPaths()
 }
 
-func (vt *VTree) MerkleHash() []byte {
+func (vt *VTree) MerkleHash() string {
 	return vt.Head.MerkleHash()
 }

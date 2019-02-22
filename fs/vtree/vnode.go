@@ -115,7 +115,7 @@ func (vn *VNode) UpdateSource(source *db.Source) error {
 // GenChildID returns a hash from the current vnode id and the given path.
 func (vn *VNode) GenChildID(p string) []byte {
 	i := append(vn.ID, p...)
-	return fsutil.HashStr(fsutil.ToStr(i))
+	return fsutil.HashBytes(i)
 }
 
 // NewVNode initialize and returns a new VNode under current vnode.
@@ -257,9 +257,9 @@ func (vn *VNode) AllDirPaths() []string {
 }
 
 // MerkleHash returns the merkle hash of the vnode.
-func (vn *VNode) MerkleHash() []byte {
+func (vn *VNode) MerkleHash() string {
 	if !vn.IsDir() {
-		return fsutil.HashStr(vn.Source.Checksum)
+		return fsutil.HashStrToHex(vn.Source.Checksum)
 	}
 
 	// TODO: Sorting should be done duing addition of vnode element to link -> NewVNode
@@ -271,7 +271,7 @@ func (vn *VNode) MerkleHash() []byte {
 		return compareVal == 0 || compareVal < 0
 	})
 
-	hashSum := []byte{}
+	hashSum := ""
 	if len(vn.Links) == 0 {
 		return hashSum
 	}
@@ -281,11 +281,11 @@ func (vn *VNode) MerkleHash() []byte {
 		wg.Add(1)
 		go func(vnode *VNode) {
 			merkleHash := vnode.MerkleHash()
-			hashSum = append(hashSum, merkleHash...)
+			hashSum += merkleHash
 			wg.Done()
 		}(vnode)
 	}
 	wg.Wait()
 
-	return fsutil.HashBytes(hashSum)
+	return fsutil.HashStrToHex(hashSum)
 }

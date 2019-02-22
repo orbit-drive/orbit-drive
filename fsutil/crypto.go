@@ -10,9 +10,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+func HashStrToHex(str string) string {
+	hash := HashStr(str)
+	return hex.EncodeToString(hash)
+}
+
 // HashStr parsing helpers
-func HashStr(p string) []byte {
-	return HashBytes(ToByte(p))
+func HashStr(str string) []byte {
+	return HashBytes(ToByte(str))
 }
 
 func HashBytes(b []byte) []byte {
