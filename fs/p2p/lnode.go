@@ -1,6 +1,7 @@
 package p2p
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"sync"
@@ -8,10 +9,21 @@ import (
 	libp2p "github.com/libp2p/go-libp2p"
 	host "github.com/libp2p/go-libp2p-host"
 	inet "github.com/libp2p/go-libp2p-net"
+	peer "github.com/libp2p/go-libp2p-peer"
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
 	maddr "github.com/multiformats/go-multiaddr"
+	protobufCodec "github.com/multiformats/go-multicodec/protobuf"
+	"github.com/orbit-drive/orbit-drive/fs/pb"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	// ProtocolRequestID - protocol header id for request traffic
+	ProtocolRequestID string = "/od/syncreq/1.0.0"
+
+	// ProtocolResponseID - protocol header id for response traffic
+	ProtocolResponseID string = "/od/syncresp/1.0.0"
 )
 
 // LNode represents a local node connection and is a wrapper around libp2p Host.
@@ -24,8 +36,8 @@ type LNode struct {
 	// NID (Network ID) is the rendez vous point for other nodes.
 	NID string
 
-	// Streams holds a list of streams from other nodes.
-	Streams []inet.Stream
+	// Peers is the list of connected peers under the same NID.
+	Peers []peer.ID
 
 	// Ctx context for cancellation signal ?
 	ctx context.Context
@@ -33,10 +45,10 @@ type LNode struct {
 
 func NewLNode(port, nid string) (*LNode, error) {
 	lnode := &LNode{
-		Port:    port,
-		NID:     nid,
-		Streams: []inet.Stream{},
-		ctx:     context.Background(),
+		Port:  port,
+		NID:   nid,
+		Peers: []peer.ID{},
+		ctx:   context.Background(),
 	}
 	if err := lnode.initHost(); err != nil {
 		return nil, err
@@ -49,24 +61,54 @@ func (ln *LNode) initHost() error {
 	addr := fmt.Sprintf("/ip4/127.0.0.1/tcp/%s", ln.Port)
 	listenMAddr, _ := maddr.NewMultiaddr(addr)
 	hostOption := libp2p.ListenAddrs(listenMAddr)
-	protocolID := protocol.ID(ProtocolID)
 
 	host, err := libp2p.New(ln.GetContext(), hostOption)
 	if err != nil {
 		return err
 	}
 
-	host.SetStreamHandler(protocolID, ln.AddStream)
+	host.SetStreamHandler(protocol.ID(ProtocolRequestID), ln.requestHandler)
+	host.SetStreamHandler(protocol.ID(ProtocolResponseID), ln.responseHandler)
 	ln.Host = host
 	return nil
 }
 
-func (ln *LNode) AddStream(s inet.Stream) {
-	ln.Streams = append(ln.Streams, s)
+// requestHandler: remote peer request handler (received request from peer)
+func (ln *LNode) requestHandler(s inet.Stream) {
+	data := &pb.MessageData{}
+	decoder := protobufCodec.Multicodec(nil).Decoder(bufio.NewReader(s))
+	err := decoder.Decode(data)
+	if err != nil {
+		log.Warn(err)
+		return
+	}
+	log.WithField("msg", string(data.GetMessage())).Info("Received message from peer")
+}
 
-	// TODO: replace with actual proto handlers.
-	go ReadHandler(s)
-	go WriteHandler(s)
+// responseHandler: remote peer response handler (received response from peer)
+func (ln *LNode) responseHandler(s inet.Stream) {}
+
+func (ln *LNode) BroadcastRequest(msg string) {
+	msgData := &pb.MessageData{
+		Message: msg,
+	}
+
+	for _, peerID := range ln.Peers {
+		s, err := ln.NewStream(ln.GetContext(), peerID, protocol.ID(ProtocolRequestID))
+		if err != nil {
+			log.Warn(err)
+		}
+		writer := bufio.NewWriter(s)
+		enc := protobufCodec.Multicodec(nil).Encoder(writer)
+		if err = enc.Encode(msgData); err != nil {
+			log.Warn(err)
+		}
+		writer.Flush()
+	}
+}
+
+func (ln *LNode) AddPeer(pid peer.ID) {
+	ln.Peers = append(ln.Peers, pid)
 }
 
 func (ln *LNode) GetContext() context.Context {

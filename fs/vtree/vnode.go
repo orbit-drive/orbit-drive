@@ -262,7 +262,7 @@ func (vn *VNode) MerkleHash() string {
 		return fsutil.HashStrToHex(vn.Source.Checksum)
 	}
 
-	// TODO: Sorting should be done duing addition of vnode element to link -> NewVNode
+	// TODO: Sorting should be done during addition of vnode element to link -> NewVNode
 	//       determine is sorting is necessary ? order deterministic ?
 	sort.SliceStable(vn.Links, func(i, j int) bool {
 		firstID := vn.Links[i].GetID()

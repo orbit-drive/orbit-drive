@@ -8,7 +8,6 @@ import (
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	libp2pdht "github.com/libp2p/go-libp2p-kad-dht"
 	inet "github.com/libp2p/go-libp2p-net"
-	protocol "github.com/libp2p/go-libp2p-protocol"
 	protobufCodec "github.com/multiformats/go-multicodec/protobuf"
 	"github.com/orbit-drive/orbit-drive/fs/pb"
 	log "github.com/sirupsen/logrus"
@@ -19,6 +18,7 @@ const (
 	ProtocolID string = "/od/sync/1.0.0"
 )
 
+// TODO: to remove -> replaced by requestHandler
 func ReadHandler(s inet.Stream) {
 	for {
 		data := &pb.MessageData{}
@@ -28,12 +28,11 @@ func ReadHandler(s inet.Stream) {
 			log.Warn(err)
 			return
 		}
-		log.WithFields(log.Fields{
-			"msg": string(data.GetMessage()),
-		}).Info("Received message from peer")
+		log.WithField("msg", string(data.GetMessage())).Info("Received message from peer")
 	}
 }
 
+// TODO: to remove -> replaced by BroadcastRequest
 func WriteHandler(s inet.Stream) {
 	stdReader := bufio.NewReader(os.Stdin)
 
@@ -95,14 +94,9 @@ func InitConn(port, nid string) error {
 		if peer.ID == lnode.ID() {
 			continue
 		}
-		stream, err := lnode.NewStream(lnode.GetContext(), peer.ID, protocol.ID(ProtocolID))
-		if err != nil {
-			log.WithField("peer-id", peer.ID).Info("Peer connection failed")
-			continue
-		} else {
-			lnode.AddStream(stream)
-		}
-		log.WithField("peer-id", peer.ID).Info("Peer connection successful")
+
+		lnode.AddPeer(peer.ID)
+		log.WithField("peer-id", peer.ID).Info("Peer added to local node peers")
 	}
 
 	return nil
