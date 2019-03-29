@@ -51,9 +51,8 @@ func NewVTree(path string, s db.Sources) (*VTree, error) {
 		state: make(chan State),
 	}
 
-	err := vt.PopulateNodes(s)
-	if err != nil {
-		return &VTree{}, nil
+	if err := vt.PopulateNodes(s); err != nil {
+		return nil, err
 	}
 	return vt, nil
 }
@@ -125,6 +124,7 @@ func (vt *VTree) AllDirPaths() []string {
 	return vt.Head.AllDirPaths()
 }
 
+// MerkleHash returns the merkle root hash.
 func (vt *VTree) MerkleHash() string {
 	return vt.Head.MerkleHash()
 }

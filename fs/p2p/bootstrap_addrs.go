@@ -1,6 +1,9 @@
 package p2p
 
 import (
+	"sync"
+
+	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	maddr "github.com/multiformats/go-multiaddr"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,9 +22,36 @@ func getBootstrapAddrs() []maddr.Multiaddr {
 	for _, bootstrapAddr := range defaultBootstrapAddrStrings {
 		addr, err := maddr.NewMultiaddr(bootstrapAddr)
 		if err != nil {
-			log.Info(err)
+			log.Error(err)
 		}
 		bootstrapAddrs = append(bootstrapAddrs, addr)
 	}
 	return bootstrapAddrs
+}
+
+// ConnectToBootstrapNodes initialize connection to hardcoded ipfs nodes addr.
+func ConnectToBootstrapNodes(ln *LNode) {
+	var wg sync.WaitGroup
+	for _, peerAddr := range getBootstrapAddrs() {
+		peerinfo, _ := peerstore.InfoFromP2pAddr(peerAddr)
+		wg.Add(1)
+		go func(peerAddr maddr.Multiaddr) {
+			defer wg.Done()
+
+			if err := ln.Connect(ln.GetContext(), *peerinfo); err != nil {
+				log.WithFields(log.Fields{
+					"peer-id": peerinfo.ID,
+					"err-msg": err.Error(),
+				}).Warn("Connection to peer failed")
+				return
+			}
+
+			log.WithFields(log.Fields{
+				"peer-id":   peerinfo.ID,
+				"peer-addr": peerAddr.String(),
+			}).Info("Connection established with peer")
+
+		}(peerAddr)
+	}
+	wg.Wait()
 }

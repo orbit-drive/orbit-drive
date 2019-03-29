@@ -1,102 +1,56 @@
 package p2p
 
 import (
-	"bufio"
-	"fmt"
-	"os"
-
 	discovery "github.com/libp2p/go-libp2p-discovery"
 	libp2pdht "github.com/libp2p/go-libp2p-kad-dht"
-	inet "github.com/libp2p/go-libp2p-net"
-	protobufCodec "github.com/multiformats/go-multicodec/protobuf"
-	"github.com/orbit-drive/orbit-drive/fs/pb"
+	"github.com/orbit-drive/orbit-drive/fs/sys"
 	log "github.com/sirupsen/logrus"
 )
 
-const (
-	// ProtocolID represents a header id for data stream processing between peers.
-	ProtocolID string = "/od/sync/1.0.0"
-)
-
-// TODO: to remove -> replaced by requestHandler
-func ReadHandler(s inet.Stream) {
-	for {
-		data := &pb.MessageData{}
-		decoder := protobufCodec.Multicodec(nil).Decoder(bufio.NewReader(s))
-		err := decoder.Decode(data)
-		if err != nil {
-			log.Warn(err)
-			return
-		}
-		log.WithField("msg", string(data.GetMessage())).Info("Received message from peer")
-	}
-}
-
-// TODO: to remove -> replaced by BroadcastRequest
-func WriteHandler(s inet.Stream) {
-	stdReader := bufio.NewReader(os.Stdin)
-
-	for {
-		fmt.Print("> ")
-		sendData, err := stdReader.ReadString('\n')
-		if err != nil {
-			log.Fatal("Error reading from stdin")
-		}
-
-		msgData := &pb.MessageData{
-			Message: sendData,
-		}
-
-		writer := bufio.NewWriter(s)
-		enc := protobufCodec.Multicodec(nil).Encoder(writer)
-		if err = enc.Encode(msgData); err != nil {
-			log.Warn(err)
-			return
-		}
-		writer.Flush()
-	}
-}
+var lnode *LNode
 
 // InitConn main entry for initialization of p2p connections.
 func InitConn(port, nid string) error {
-	lnode, err := NewLNode(port, nid)
-	if err != nil {
+	lnode = NewLNode(port, nid)
+	if err := lnode.initHost(); err != nil {
 		return err
 	}
 	log.WithField("host-id", lnode.ID()).Info("Host created")
 
+	ctx := lnode.GetContext()
 	// Initialize kademlia distributed hash table from LNode host.
-	kademliaDHT, err := libp2pdht.New(lnode.GetContext(), lnode)
+	kademliaDHT, err := libp2pdht.New(ctx, lnode)
 	if err != nil {
 		return err
 	}
-	if err = kademliaDHT.Bootstrap(lnode.GetContext()); err != nil {
+	if err = kademliaDHT.Bootstrap(ctx); err != nil {
 		return err
 	}
 
-	lnode.ConnectToBootstrapNodes()
+	// Connect lnode to bootstrap libp2p nodes
+	ConnectToBootstrapNodes(lnode)
 
 	// TODO: move routing to LNode ?
 	log.Warn("Announcing to peers...")
 	routingDiscovery := discovery.NewRoutingDiscovery(kademliaDHT)
-	discovery.Advertise(lnode.GetContext(), routingDiscovery, nid)
+	discovery.Advertise(ctx, routingDiscovery, nid)
 	log.Info("Announcing successful")
 
 	log.Warn("Searching for other peers...")
-	peerChan, err := routingDiscovery.FindPeers(lnode.GetContext(), nid)
+	peerChan, err := routingDiscovery.FindPeers(ctx, nid)
 	if err != nil {
 		return err
 	}
 
 	for peer := range peerChan {
-		log.WithField("peer-id", peer.ID).Info("Peer discovered !!!")
+		log.WithField("peer-id", peer.ID).Info("Peer discovered!")
 
 		if peer.ID == lnode.ID() {
 			continue
 		}
 
 		lnode.AddPeer(peer.ID)
-		log.WithField("peer-id", peer.ID).Info("Peer added to local node peers")
+		sys.Notify("Peer connected: ", string(peer.ID))
 	}
 
 	return nil

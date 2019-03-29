@@ -218,18 +218,21 @@ func (vn *VNode) traverse(steps []string) (*VNode, error) {
 
 // ToProto parse a vtree to protobuf.
 func (vn *VNode) ToProto() *pb.FSNode {
-	var wg sync.WaitGroup
 	pbNode := &pb.FSNode{
-		ID:     vn.ID,
-		Path:   vn.Path,
-		Source: vn.Source.Src,
-		Links:  []*pb.FSNode{},
+		ID:    vn.ID,
+		Path:  vn.Path,
+		Links: []*pb.FSNode{},
 	}
 
+	if !vn.IsDir() {
+		pbNode.Source = vn.Source.Src
+	}
+
+	var wg sync.WaitGroup
 	for _, vnode := range vn.Links {
 		wg.Add(1)
-		go func(vnode *VNode) {
-			pbNode.Links = append(pbNode.Links, vnode.ToProto())
+		go func(vn *VNode) {
+			pbNode.Links = append(pbNode.Links, vn.ToProto())
 			wg.Done()
 		}(vnode)
 	}
@@ -256,12 +259,8 @@ func (vn *VNode) AllDirPaths() []string {
 	return dirPaths
 }
 
-// MerkleHash returns the merkle hash of the vnode.
-func (vn *VNode) MerkleHash() string {
-	if !vn.IsDir() {
-		return fsutil.HashStrToHex(vn.Source.Checksum)
-	}
-
+// SortLinksByID order the links of a dir by id.
+func (vn *VNode) SortLinksByID() {
 	// TODO: Sorting should be done during addition of vnode element to link -> NewVNode
 	//       determine is sorting is necessary ? order deterministic ?
 	sort.SliceStable(vn.Links, func(i, j int) bool {
@@ -270,12 +269,19 @@ func (vn *VNode) MerkleHash() string {
 		compareVal := strings.Compare(firstID, secondID)
 		return compareVal == 0 || compareVal < 0
 	})
+}
 
-	hashSum := ""
-	if len(vn.Links) == 0 {
-		return hashSum
+// MerkleHash returns the merkle hash of the vnode.
+func (vn *VNode) MerkleHash() string {
+	if !vn.IsDir() {
+		return fsutil.HashStrToHex(vn.Source.Checksum)
 	}
+	if len(vn.Links) == 0 {
+		return ""
+	}
+	vn.SortLinksByID()
 
+	var hashSum string
 	var wg sync.WaitGroup
 	for _, vnode := range vn.Links {
 		wg.Add(1)

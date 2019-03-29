@@ -17,7 +17,7 @@ const (
 func Notify(m ...string) {
 	msg := strings.Join(m, "")
 	beeep.Notify(notifierTitle, msg, appIcon)
-	log.Info(msg)
+	log.WithField("msg", msg).Info("System notifier!")
 }
 
 // Alert sends an alert notification to the system foreground
@@ -25,7 +25,7 @@ func Notify(m ...string) {
 func Alert(m ...string) {
 	msg := strings.Join(m, "")
 	beeep.Alert(notifierTitle, msg, appIcon)
-	log.Warn(msg)
+	log.WithField("msg", msg).Warn("System notifier!")
 }
 
 // Fatal sends an alert notification to the system foreground,
@@ -33,5 +33,5 @@ func Alert(m ...string) {
 func Fatal(m ...string) {
 	msg := strings.Join(m, "")
 	beeep.Alert(notifierTitle, msg, appIcon)
-	log.Fatal(msg)
+	log.WithField("msg", msg).Fatal("System notifier!")
 }

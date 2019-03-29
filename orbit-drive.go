@@ -19,7 +19,6 @@ func initLogger() *os.File {
 		os.Create(logFilePath)
 	}
 
-	log.Println(logFilePath)
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)

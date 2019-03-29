@@ -13,6 +13,11 @@ const (
 	CONFIGFILENAME string = "config.json"
 )
 
+var (
+	// ErrSecretPhraseNotProvided is returned when initializing a config with no secrete phrase
+	ErrSecretPhraseNotProvided = errors.New("config: no secret phrase provided")
+)
+
 // Config represents the usr configuration settings
 type Config struct {
 	// Root is the absolute path of the directory to synchronize.
@@ -31,11 +36,11 @@ type Config struct {
 // NewConfig initialize a new usr config and save it to config file.
 func NewConfig(root, secretPhrase, nodeAddr, p2pPort string) error {
 	if secretPhrase == "" {
-		return errors.New("no secret phrase provided")
+		return ErrSecretPhraseNotProvided
 	}
 	configFile, err := createConfigFile()
 	if err != nil {
-		return nil
+		return err
 	}
 	defer configFile.Close()
 

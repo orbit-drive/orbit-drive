@@ -24,16 +24,16 @@ type Source struct {
 // Sources represents the store of the locally saved files.
 type Sources map[string]*Source
 
-// NewSource generates a new source instance froma given path
+// NewSource generates a new source instance from a given path
 // and validates the path, computes the file checksum and size.
 func NewSource(path string) *Source {
 	fi, err := os.Stat(path)
 	if err != nil || fi.IsDir() {
-		return &Source{}
+		return nil
 	}
 	checksum, err := fsutil.Md5Checksum(path)
 	if err != nil {
-		// CHeck how to deal with error here also
+		// TODO: How to deal with error here also
 		log.Warn(err)
 	}
 	return &Source{

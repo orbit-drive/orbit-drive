@@ -27,7 +27,7 @@ func initVTree(c *Config) (*vtree.VTree, error) {
 		return nil, err
 	}
 	sources.Dump()
-	log.Info("Vtree successfully initialized!")
+	log.Info("VTree successfully initialized!")
 	return vt, nil
 }
 
@@ -36,7 +36,7 @@ func initWatcher(c *Config, vt *vtree.VTree) (*Watcher, error) {
 
 	w, err := NewWatcher(c.Root)
 	if err != nil {
-		return &Watcher{}, err
+		return nil, err
 	}
 	log.WithField("path", c.Root).Info("Watching folder")
 	dirPaths := vt.AllDirPaths()
@@ -87,12 +87,14 @@ func Run(c *Config) {
 				"path":      state.Path,
 				"operation": state.Op,
 			}).Info("vtree state change detected!")
+
 			vtPb := vt.ToProto()
 			parsedPb, err := proto.Marshal(vtPb)
 			if err != nil {
 				sys.Alert(err.Error())
 			}
 			log.WithField("byte-data", parsedPb).Info("vtree successfully parsed to pb!")
+			p2p.GetMerkleHash()
 		case <-close:
 			return
 		}

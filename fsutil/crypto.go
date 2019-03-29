@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/google/uuid"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -15,7 +17,6 @@ func HashStrToHex(str string) string {
 	return hex.EncodeToString(hash)
 }
 
-// HashStr parsing helpers
 func HashStr(str string) []byte {
 	return HashBytes(ToByte(str))
 }
@@ -23,6 +24,11 @@ func HashStr(str string) []byte {
 func HashBytes(b []byte) []byte {
 	hash := sha256.Sum256(b)
 	return hash[:]
+}
+
+func RandUUID() string {
+	uuid, _ := uuid.NewRandom()
+	return uuid.String()
 }
 
 // SecureHash
