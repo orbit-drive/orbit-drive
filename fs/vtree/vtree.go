@@ -39,8 +39,8 @@ type VTree struct {
 }
 
 // NewVTree initialize a new virtual tree (VTree) given an absolute path.
-func NewVTree(path string, s db.Sources) (*VTree, error) {
-	vt := &VTree{
+func NewVTree(path string) *VTree {
+	return &VTree{
 		Head: &VNode{
 			ID:     fsutil.ToByte(ROOTKEY),
 			Path:   path,
@@ -50,11 +50,6 @@ func NewVTree(path string, s db.Sources) (*VTree, error) {
 		},
 		state: make(chan State),
 	}
-
-	if err := vt.PopulateNodes(s); err != nil {
-		return nil, err
-	}
-	return vt, nil
 }
 
 // StateChanges returns the state channel of the VTree.
@@ -67,10 +62,16 @@ func (vt *VTree) PushToState(p string, op opCode) {
 	vt.state <- State{Path: p, Op: op}
 }
 
+// Build is a wrapper around PopulateNodes to set flag or
+// auto upload unsync files to ipfs network.
+func (vt *VTree) Build(s db.Sources) error {
+	return vt.PopulateNodes(s, true)
+}
+
 // PopulateNodes recursively populates the file tree structure
 // starting from the head.
-func (vt *VTree) PopulateNodes(s db.Sources) error {
-	return vt.Head.PopulateNodes(s)
+func (vt *VTree) PopulateNodes(s db.Sources, upload bool) error {
+	return vt.Head.PopulateNodes(s, upload)
 }
 
 // Find recursively traverse down the tree structure from the
@@ -97,7 +98,7 @@ func (vt *VTree) Add(path string) error {
 	if isDir {
 		n.SetAsDir()
 		// Read file content and upload
-		n.PopulateNodes(db.Sources{})
+		n.PopulateNodes(db.Sources{}, true)
 	} else {
 		n.SetAsFile()
 		n.SaveSource()
@@ -117,6 +118,10 @@ func (vt *VTree) ToProto() *pb.FSTree {
 	return &pb.FSTree{
 		Head: vt.Head.ToProto(),
 	}
+}
+
+func (vt *VTree) RootPath() string {
+	return vt.Head.GetPath()
 }
 
 // AllDirPaths returns all the dir path in the vtree.

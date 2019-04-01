@@ -57,6 +57,21 @@ func (vn *VNode) GetID() string {
 	return fsutil.ToStr(vn.ID)
 }
 
+// GetPath returns the absolute vnode path.
+func (vn *VNode) GetPath() string {
+	return vn.Path
+}
+
+// GetName returns the actual dir/file name.
+func (vn *VNode) GetName() string {
+	return fsutil.ExtractFileName(vn.GetPath())
+}
+
+// LinksCount returns the amount of links(child) it has.
+func (vn *VNode) LinksCount() int {
+	return len(vn.Links)
+}
+
 // SetAsDir sets the vnode type to a dir.
 func (vn *VNode) SetAsDir() {
 	vn.Type = DirCode
@@ -133,7 +148,7 @@ func (vn *VNode) NewVNode(path string) *VNode {
 
 // PopulateNodes read a path and populate the its links given
 // the path is a directory else creates a file node.RemoveFromWatchList
-func (vn *VNode) PopulateNodes(s db.Sources) error {
+func (vn *VNode) PopulateNodes(s db.Sources, upload bool) error {
 	files, err := ioutil.ReadDir(vn.Path)
 	if err != nil {
 		return err
@@ -148,7 +163,7 @@ func (vn *VNode) PopulateNodes(s db.Sources) error {
 		nn := vn.NewVNode(abspath)
 		if f.IsDir() {
 			nn.SetAsDir()
-			nn.PopulateNodes(s)
+			nn.PopulateNodes(s, upload)
 			continue
 		}
 

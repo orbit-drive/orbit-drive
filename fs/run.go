@@ -17,16 +17,16 @@ import (
 func initVTree(c *Config) (*vtree.VTree, error) {
 	log.Info("Initializing vtree...")
 
-	sources, err := db.GetSources()
+	s, err := db.GetSources()
 	if err != nil {
 		return nil, err
 	}
 
-	vt, err := vtree.NewVTree(c.Root, sources)
-	if err != nil {
+	vt := vtree.NewVTree(c.Root)
+	if err := vt.Build(s); err != nil {
 		return nil, err
 	}
-	sources.Dump()
+	s.Dump()
 	log.Info("VTree successfully initialized!")
 	return vt, nil
 }

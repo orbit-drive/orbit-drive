@@ -11,7 +11,11 @@ import (
 var (
 	// ErrNodeOffline is returned when performing an operation to a
 	// disconnected ipfs node.
-	ErrNodeOffline = errors.New("ipfs node not live")
+	ErrNodeOffline = errors.New("ipfs: node not live")
+
+	// ErrNodeNotInitialized is returned when accessing a nil pointer to
+	// the ipfs shell instance.
+	ErrNodeNotInitialized = errors.New("ipfs: node not initialized")
 )
 
 var (
@@ -26,14 +30,21 @@ func InitShell(addr string) {
 }
 
 // IsLive return true if ipfs node is live.
-func IsLive() bool {
-	return Shell.IsUp()
+func IsLive() (bool, error) {
+	if Shell == nil {
+		return false, ErrNodeNotInitialized
+	}
+	return Shell.IsUp(), nil
 }
 
 // UploadFile takes a file path and upload it to ipfs
 // and return the generate hash.
 func UploadFile(p string) (string, error) {
-	if !IsLive() {
+	isLive, err := IsLive()
+	if err != nil {
+		return "", err
+	}
+	if !isLive {
 		return "", ErrNodeOffline
 	}
 	file, err := os.Open(p)

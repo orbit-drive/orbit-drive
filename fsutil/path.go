@@ -12,6 +12,10 @@ const (
 	CONFIGPATH string = "/.orbit-drive"
 )
 
+func ExtractFileName(path string) string {
+	return filepath.Base(path)
+}
+
 func PathExists(path string) bool {
 	_, err := os.Stat(path)
 	if err == nil {
