@@ -100,8 +100,7 @@ func GetSources() (Sources, error) {
 		}
 	}
 	iter.Release()
-	err := iter.Error()
-	if err != nil {
+	if err := iter.Error(); err != nil {
 		return Sources{}, err
 	}
 	return store, nil

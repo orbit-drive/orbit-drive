@@ -26,7 +26,7 @@ type Watcher struct {
 func NewWatcher(p string) (*Watcher, error) {
 	n, err := fsnotify.NewWatcher()
 	if err != nil {
-		return &Watcher{}, err
+		return nil, err
 	}
 	w := &Watcher{
 		Done:     make(chan bool),
