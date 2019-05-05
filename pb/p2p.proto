@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package pb;
+
+import "file_tree.proto";
+
+message MessageData {
+  string message = 1;
+}
+
+message Response {
+  string peer_id = 1;
+  string request_id = 2;
+  oneof result {
+    string error = 3;
+    FSTree fstree = 4;
+  }
+}
+
+message Request {
+  string peer_id = 1;
+  string request_id = 2;
+  string method = 3;
+}
