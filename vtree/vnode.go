@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/orbit-drive/orbit-drive/config"
 	"github.com/orbit-drive/orbit-drive/db"
 	"github.com/orbit-drive/orbit-drive/ipfs"
 	"github.com/orbit-drive/orbit-drive/pb"
@@ -57,14 +58,14 @@ func (vn *VNode) GetID() string {
 	return utils.ToStr(vn.ID)
 }
 
-// GetPath returns the absolute vnode path.
-func (vn *VNode) GetPath() string {
-	return vn.Path
+// GetAbsPath returns the absolute vnode path.
+func (vn *VNode) GetAbsPath() string {
+	return filepath.Join(config.GetRoot(), vn.Path)
 }
 
 // GetName returns the actual dir/file name.
 func (vn *VNode) GetName() string {
-	return utils.ExtractFileName(vn.GetPath())
+	return utils.ExtractFileName(vn.GetAbsPath())
 }
 
 // LinksCount returns the amount of links(child) it has.
@@ -149,14 +150,14 @@ func (vn *VNode) NewVNode(path string) *VNode {
 // PopulateNodes read a path and populate the its links given
 // the path is a directory else creates a file node.RemoveFromWatchList
 func (vn *VNode) PopulateNodes(s db.Sources, upload bool) error {
-	files, err := ioutil.ReadDir(vn.Path)
+	files, err := ioutil.ReadDir(vn.GetAbsPath())
 	if err != nil {
 		return err
 	}
 
 	var wg sync.WaitGroup
 	for _, f := range files {
-		abspath := filepath.Join(vn.Path, f.Name())
+		abspath := filepath.Join(vn.GetAbsPath(), f.Name())
 		if utils.IsHidden(abspath) {
 			continue
 		}
@@ -261,7 +262,7 @@ func (vn *VNode) AllDirPaths() []string {
 		return []string{}
 	}
 	var wg sync.WaitGroup
-	dirPaths := []string{vn.Path}
+	dirPaths := []string{vn.GetAbsPath()}
 	for _, vnode := range vn.Links {
 		wg.Add(1)
 		go func(vnode *VNode) {

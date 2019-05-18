@@ -16,7 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func initVTree(c *config.Config) (*vtree.VTree, error) {
+func initVTree() (*vtree.VTree, error) {
 	log.Info("Initializing vtree...")
 
 	s, err := db.GetSources()
@@ -24,7 +24,7 @@ func initVTree(c *config.Config) (*vtree.VTree, error) {
 		return nil, err
 	}
 
-	vt := vtree.NewVTree(c.Root)
+	vt := vtree.NewVTree()
 	if err := vt.Build(s); err != nil {
 		return nil, err
 	}
@@ -33,14 +33,14 @@ func initVTree(c *config.Config) (*vtree.VTree, error) {
 	return vt, nil
 }
 
-func initWatcher(c *config.Config, vt *vtree.VTree) (*watcher.Watcher, error) {
+func initWatcher(vt *vtree.VTree) (*watcher.Watcher, error) {
 	log.Info("Initializing watcher...")
 
-	w, err := watcher.NewWatcher(c.Root)
+	w, err := watcher.NewWatcher(config.GetRoot())
 	if err != nil {
 		return nil, err
 	}
-	log.WithField("path", c.Root).Info("Watching folder")
+	log.WithField("path", config.GetRoot()).Info("Watching folder")
 	dirPaths := vt.AllDirPaths()
 	w.BatchAdd(dirPaths)
 	go w.Start(vt)
@@ -58,23 +58,23 @@ func initP2P(c *config.Config) {
 }
 
 // Run is the main entry point for orbit drive p2p sync.
-func Run(c *config.Config) {
+func Run() {
 	sys.Notify("Starting file sync!")
 	defer sys.Alert("Stopping file sync!")
 
-	log.WithField("node-addr", c.NodeAddr).Info("Initializing ipfs shell...")
-	ipfs.InitShell(c.NodeAddr)
+	log.WithField("node-addr", config.GetNodeAddr()).Info("Initializing ipfs shell...")
+	ipfs.InitShell(config.GetNodeAddr())
 
 	// TODO: remove -> moving to web hub ???
-	// go initP2P(c)
+	// go initP2P()
 
-	vt, err := initVTree(c)
+	vt, err := initVTree()
 	if err != nil {
 		sys.Fatal(err.Error())
 	}
 	log.WithField("hash", vt.MerkleHash()).Info("VTree loaded merkle hash")
 
-	watcher, err := initWatcher(c, vt)
+	watcher, err := initWatcher(vt)
 	if err != nil {
 		sys.Fatal(err.Error())
 	}

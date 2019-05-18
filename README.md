@@ -23,12 +23,12 @@ protoc -I=fs/pb --go_out=fs/pb fs/pb/*.proto
 
 Initialize user settings
 ```bash
-go run orbit-drive.go init -r [Path of folder to sync] -p [Password] -n [Ipfs gateway]
+go run main.go init -r [Path of folder to sync] -p [Password] -n [Ipfs gateway]
 ```
 
 Start synchronizing folder
 ```bash
-go run orbit-drive.go sync
+go run main.go sync
 ```
 
 - Register Service

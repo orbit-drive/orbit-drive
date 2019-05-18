@@ -14,6 +14,7 @@ const (
 )
 
 var (
+	cfg *Config
 	// ErrSecretPhraseNotProvided is returned when initializing a config with no secrete phrase
 	ErrSecretPhraseNotProvided = errors.New("config: no secret phrase provided")
 )
@@ -31,6 +32,14 @@ type Config struct {
 
 	// Port to use by p2p connections.
 	P2PPort string `json:"p2p_port"`
+}
+
+func GetNodeAddr() string {
+	return cfg.NodeAddr
+}
+
+func GetRoot() string {
+	return cfg.Root
 }
 
 // NewConfig initialize a new usr config and save it to config file.
@@ -66,24 +75,24 @@ func NewConfig(root, secretPhrase, nodeAddr, p2pPort string) error {
 }
 
 // LoadConfig reads config from config.json file.
-func LoadConfig(nodeAddr, p2pPort string) (*Config, error) {
+func LoadConfig(nodeAddr, p2pPort string) error {
 	configPath := configFilePath()
-	config := &Config{}
+	cfg = &Config{}
 	configFile, err := os.Open(configPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	parser := json.NewDecoder(configFile)
-	if err = parser.Decode(config); err != nil {
-		return nil, err
+	if err = parser.Decode(cfg); err != nil {
+		return err
 	}
 	if nodeAddr != "" {
-		config.NodeAddr = nodeAddr
+		cfg.NodeAddr = nodeAddr
 	}
 	if p2pPort != "" {
-		config.P2PPort = p2pPort
+		cfg.P2PPort = p2pPort
 	}
-	return config, nil
+	return nil
 }
 
 func createConfigFile() (*os.File, error) {
