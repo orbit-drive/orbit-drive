@@ -39,11 +39,11 @@ type VTree struct {
 }
 
 // NewVTree initialize a new virtual tree (VTree) given an absolute path.
-func NewVTree(path string) *VTree {
+func NewVTree() *VTree {
 	return &VTree{
 		Head: &VNode{
 			ID:     utils.ToByte(ROOTKEY),
-			Path:   path,
+			Path:   "/", // Relative root path of vtree.
 			Type:   DirCode,
 			Links:  []*VNode{},
 			Source: &db.Source{},
@@ -121,7 +121,7 @@ func (vt *VTree) ToProto() *pb.FSTree {
 }
 
 func (vt *VTree) RootPath() string {
-	return vt.Head.GetPath()
+	return vt.Head.GetAbsPath()
 }
 
 // AllDirPaths returns all the dir path in the vtree.

@@ -83,14 +83,13 @@ func main() {
 		}
 		fmt.Println("Configured! Run the following command to start syncing: orbit-drive sync")
 	case syncCmd.Happened():
-		c, err := config.LoadConfig(*nodeAddr, *p2pPort)
-		if err != nil {
+		if err := config.LoadConfig(*nodeAddr, *p2pPort); err != nil {
 			log.Fatal(err)
 		}
 
 		f := initLogger()
 		defer f.Close()
-		sync.Run(c)
+		sync.Run()
 	default:
 		os.Exit(0)
 	}
