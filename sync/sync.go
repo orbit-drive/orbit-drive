@@ -40,7 +40,7 @@ func initWatcher(vt *vtree.VTree) (*watcher.Watcher, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.WithField("path", config.GetRoot()).Info("Watching folder")
+	log.WithField("path", config.GetRoot()).Info("Watching root folder to sync")
 	dirPaths := vt.AllDirPaths()
 	w.BatchAdd(dirPaths)
 	go w.Start(vt)
